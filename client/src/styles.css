@@ -458,6 +458,18 @@
   .reg-toggle:active {
     transform: scale(0.98);
   }
+  /* Phones: three toggles share ~350px – icon above a smaller label so "Contractor" always fits. */
+  @media (max-width: 640px), (max-height: 520px) {
+    .reg-toggle {
+      min-width: 0;
+      flex-direction: column;
+      gap: 0.25em;
+      padding: 0.5rem 0.15rem;
+      font-size: clamp(13px, 3.8vw, 1.02rem);
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+  }
   .reg-toggle[aria-checked="true"] {
     background: var(--color-nc-lime);
     border-color: var(--color-nc-lime);
@@ -555,69 +567,27 @@
   .fb-choice:active {
     transform: scale(0.97);
   }
-  .fb-choice[aria-checked="true"],
-  .fb-chip[aria-checked="true"] {
-    background: var(--color-nc-lime);
-    border-color: var(--color-nc-lime);
-    color: var(--color-nc-navy);
+  .fb-choice {
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+    line-height: 1.2;
   }
-  .fb-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35em;
-    min-height: max(44px, 2.9rem);
-    padding: 0.35rem 0.95rem;
-    border-radius: 9999px;
-    border: 2px solid var(--color-line);
-    background: #fff;
-    color: var(--color-nc-navy);
-    font-size: max(14px, 0.95rem);
-    font-weight: 700;
-    line-height: 1.15;
-    text-align: left;
-    transition: background-color 0.15s, border-color 0.15s, transform 0.12s;
+  .fb-choice[aria-disabled="true"] {
+    cursor: default;
+    transform: none;
   }
-  .fb-chip:active {
-    transform: scale(0.97);
+  .fb-choice[data-result="correct"] {
+    background: var(--color-nc-green);
+    border-color: var(--color-nc-green);
+    color: #fff;
   }
-  .fb-other {
-    width: 100%;
-    min-height: max(48px, 3rem);
-    padding: 0.5rem 0.9rem;
-    border-radius: 0.8rem;
-    border: 2px solid var(--color-line);
-    background: #fff;
-    color: var(--color-nc-navy);
-    font-size: max(16px, 1rem);
-    font-weight: 600;
+  .fb-choice[data-result="wrong"] {
+    background: var(--color-nc-red);
+    border-color: var(--color-nc-red);
+    color: #fff;
   }
-  .fb-other:focus {
-    outline: none;
-    border-color: var(--color-nc-blue);
-  }
-  .fb-star {
-    display: grid;
-    place-items: center;
-    width: max(48px, 3.3rem);
-    height: max(48px, 3.3rem);
-    border-radius: 0.9rem;
-    color: #98a2b3;
-  }
-  .fb-star svg {
-    width: 82%;
-    height: 82%;
-    fill: transparent;
-    stroke-width: 1.8;
-    transition: fill 0.15s, color 0.15s;
-  }
-  .fb-star[data-on="true"] {
-    color: var(--color-nc-yellow);
-  }
-  .fb-star[data-on="true"] svg {
-    fill: var(--color-nc-yellow);
-  }
-  .fb-star[data-pop="true"] svg {
-    animation: fb-pop 0.38s cubic-bezier(0.2, 1.4, 0.4, 1);
+  .fb-choice[data-result="dim"] {
+    opacity: 0.5;
   }
   .fb-submit {
     display: flex;
@@ -716,12 +686,7 @@
   100% { box-shadow: 0 0 0 0.6rem rgb(191 215 48 / 0); }
 }
 
-/* Feedback: star "pop", the gentle pulse of the ready button, the sending spinner. */
-@keyframes fb-pop {
-  0% { transform: scale(0.7); }
-  60% { transform: scale(1.25); }
-  100% { transform: scale(1); }
-}
+/* Quiz: the gentle pulse of the ready button, the sending spinner. */
 @keyframes fb-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgb(0 161 156 / 0.45); }
   50% { box-shadow: 0 0 0 0.55rem rgb(0 161 156 / 0); }
@@ -755,5 +720,27 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* Races on short phones (iPhone SE upright, any phone sideways): the clue, tiles and Skip fit on one
+   screen without scrolling. The name line is hidden while racing (it was on the how-to screen). */
+@media (max-width: 640px) and (max-height: 760px), (max-height: 520px) {
+  .race-fit [data-testid="title"] {
+    display: none;
+  }
+  .race-fit header {
+    margin-bottom: 0.5rem;
+  }
+  .race-fit .tile {
+    min-height: 46px;
+  }
+  .race-fit [data-testid="tiles"] {
+    gap: 0.45rem;
+  }
+}
+@media (max-height: 520px) {
+  .race-fit .panel {
+    padding: 0.7rem 0.9rem;
   }
 }

@@ -257,6 +257,20 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       ALTER TABLE feedback ADD CONSTRAINT feedback_affiliation_type_check CHECK (affiliation_type IN ('project', 'business', 'contractor'));
     `,
   },
+  {
+    // The three feedback questions became a three-question quiz (one option each, right or wrong).
+    // The earlier answer columns stay for answers given before (null from now on).
+    id: '007_quiz',
+    sql: /* sql */ `
+      ALTER TABLE feedback ALTER COLUMN q1_relevant DROP NOT NULL;
+      ALTER TABLE feedback ALTER COLUMN q2_would_explore DROP NOT NULL;
+      ALTER TABLE feedback ALTER COLUMN q3_understanding_rating DROP NOT NULL;
+      ALTER TABLE feedback ADD COLUMN q1_answer text;
+      ALTER TABLE feedback ADD COLUMN q2_answer text;
+      ALTER TABLE feedback ADD COLUMN q3_answer text;
+      ALTER TABLE feedback ADD COLUMN quiz_score int CHECK (quiz_score BETWEEN 0 AND 3);
+    `,
+  },
 ]
 
 /** Lock id for start-up work (migrations, seeding): several instances may start at once. */

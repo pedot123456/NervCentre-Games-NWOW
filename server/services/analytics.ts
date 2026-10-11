@@ -1,7 +1,7 @@
 import { opuKey } from '@shared/affiliation'
 import type { DashboardData } from '@shared/dashboard'
-import type { FeedbackBreakdownRow, FeedbackDashboard, FeedbackFilter, FeedbackMode } from '@shared/feedback'
-import { feedbackModeOf, interestCounts } from '@shared/feedback'
+import type { FeedbackBreakdownRow, FeedbackDashboard, FeedbackFilter, FeedbackMode, QuizResult } from '@shared/feedback'
+import { feedbackModeOf, QUIZ, type QuizId } from '@shared/feedback'
 import { DAY_MS, klDayKey, klDayRange, klHour } from '@shared/time'
 import type { GameMode } from '@shared/types'
 import { AFFILIATION_TYPES, type AffiliationType } from '@shared/validation'
@@ -139,7 +139,7 @@ export async function dashboard(store: Store, f: DashFilter): Promise<DashboardD
       avg_solved: avg(runs.map((r) => r.solved)),
       battles: new Set(runs.filter((r) => r.mode !== 'solo').map((r) => r.race_id)).size,
       feedback: feedback.length,
-      avg_understanding: avg(feedback.map((x) => x.q3_understanding_rating)),
+      avg_quiz_score: avg(quizRows(feedback).map((x) => x.quiz_score!)),
       rehearsal_games: rehearsal,
     },
     timeline_unit: f.day ? 'hour' : 'day',
@@ -152,7 +152,7 @@ export async function dashboard(store: Store, f: DashFilter): Promise<DashboardD
       .map((p) => ({ key: p.key, label: p.label, players: p.players.size, games: p.games, best_time_ms: minOf(p.best) }))
       .sort((a, b) => b.players - a.players || b.games - a.games || a.label.localeCompare(b.label)),
     modes: (['solo', 'battle', 'h2h'] as GameMode[]).map((mode) => ({ mode, games: runs.filter((r) => r.mode === mode).length })),
-    interest: interestCounts(feedback),
+    quiz: quizResults(quizRows(feedback)).map((q) => ({ id: q.id, short: q.short, answered: q.answered, correct: q.correct })),
   }
 }
 
@@ -185,6 +185,26 @@ function matches(f: FeedbackFilter, x: { mode: FeedbackMode; affiliation_type: A
   return true
 }
 
+const answerOf = (x: FeedbackRecord, id: QuizId) => ({ q1: x.q1_answer, q2: x.q2_answer, q3: x.q3_answer })[id]
+
+/** Answers given to the quiz (answers to the earlier questions have no quiz score). */
+const quizRows = (rows: FeedbackRecord[]) => rows.filter((x) => x.quiz_score !== null)
+
+function quizResults(rows: FeedbackRecord[]): QuizResult[] {
+  return QUIZ.map((q) => {
+    const answered = rows.filter((x) => answerOf(x, q.id) !== null)
+    return {
+      id: q.id,
+      short: q.short,
+      text: q.text,
+      correct_option: q.options.find((o) => o.id === q.correct)!.label,
+      answered: answered.length,
+      correct: answered.filter((x) => answerOf(x, q.id) === q.correct).length,
+      options: q.options.map((o) => ({ id: o.id, label: o.label, count: answered.filter((x) => answerOf(x, q.id) === o.id).length, correct: o.id === q.correct })),
+    }
+  })
+}
+
 /** Feedback answers for the filters (rehearsal answers left out unless asked). */
 export async function feedbackRows(store: Store, f: FeedbackFilter, includeTest = false): Promise<FeedbackRecord[]> {
   const rows = await store.listFeedback({ ...feedbackRange(f), includeTest })
@@ -205,9 +225,8 @@ function breakdown(rows: FeedbackRecord[], keyOf: (x: FeedbackRecord) => { key: 
       key,
       label: v.label,
       responses: v.rows.length,
-      q1_yes: v.rows.filter((x) => x.q1_relevant).length,
-      q2_yes: v.rows.filter((x) => x.q2_would_explore).length,
-      q3_average: avg(v.rows.map((x) => x.q3_understanding_rating)),
+      avg_score: avg(quizRows(v.rows).map((x) => x.quiz_score!)),
+      correct: Object.fromEntries(QUIZ.map((q) => [q.id, v.rows.filter((x) => answerOf(x, q.id) === q.correct).length])) as Record<QuizId, number>,
     }))
     .sort((a, b) => b.responses - a.responses || a.label.localeCompare(b.label))
 }
@@ -226,13 +245,9 @@ export async function feedbackDashboard(store: Store, f: FeedbackFilter): Promis
     responses: rows.length,
     completed_games: runs.length,
     response_rate: runs.length ? rows.length / runs.length : null,
-    q1: { yes: rows.filter((x) => x.q1_relevant).length, no: rows.filter((x) => !x.q1_relevant).length },
-    q2: { yes: rows.filter((x) => x.q2_would_explore).length, no: rows.filter((x) => !x.q2_would_explore).length },
-    q3: {
-      average: avg(rows.map((x) => x.q3_understanding_rating)),
-      distribution: [1, 2, 3, 4, 5].map((rating) => ({ rating, count: rows.filter((x) => x.q3_understanding_rating === rating).length })),
-    },
-    solutions: interestCounts(rows),
+    avg_score: avg(quizRows(rows).map((x) => x.quiz_score!)),
+    score_distribution: [0, 1, 2, 3].map((score) => ({ score, count: rows.filter((x) => x.quiz_score === score).length })),
+    questions: quizResults(quizRows(rows)),
     by_opu: breakdown(rows, (x) => (x.affiliation_type === 'business' && x.opu ? { key: opuKey(x.opu), label: x.opu } : null)),
     by_project: breakdown(rows, (x) => (x.affiliation_type === 'project' && x.project_name ? id.project(x.project_name) : null)),
   }

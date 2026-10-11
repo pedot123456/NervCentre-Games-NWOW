@@ -105,7 +105,7 @@ function SoloRaceView({ race: r, seat, title, onEnd, onAdmin }: { race: RaceStat
 
   if (phone && short) {
     return (
-      <KioskFrame title={title} onAdmin={onAdmin}>
+      <KioskFrame title={title} onAdmin={onAdmin} fit>
         <div className="grid flex-1 grid-cols-[1fr_11rem] gap-3">
           <div className="relative flex flex-col">{board}</div>
           <div className="flex flex-col items-center gap-2">
@@ -120,7 +120,7 @@ function SoloRaceView({ race: r, seat, title, onEnd, onAdmin }: { race: RaceStat
 
   if (phone) {
     return (
-      <KioskFrame title={title} onAdmin={onAdmin}>
+      <KioskFrame title={title} onAdmin={onAdmin} fit>
         <div className="mb-3 flex items-center gap-3">
           <Constellation lit={solved} showNext={started && !run.ended} className="h-[4.2rem] w-[6rem] shrink-0" />
           <Timer rules={r.rules} goAt={r.go_at} progress={run.progress} size="sm" ticks className="flex-1" />

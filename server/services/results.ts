@@ -1,5 +1,5 @@
 import { resolveAffiliationKey } from '@shared/affiliation'
-import { cleanInterest, feedbackModeOf, type FeedbackSaved, type FeedbackStatus, type FeedbackSubmission } from '@shared/feedback'
+import { feedbackModeOf, isQuizOption, QUIZ, quizScore, type FeedbackSaved, type FeedbackStatus, type FeedbackSubmission } from '@shared/feedback'
 import { titleFor } from '@shared/game'
 import { klDayKey } from '@shared/time'
 import type { RunResult } from '@shared/types'
@@ -99,8 +99,8 @@ export async function submitFeedback(store: Store, f: FeedbackSubmission, now: n
   if ((await store.hasFeedback(run.id)) || (await answeredOn(store, run, klDayKey(at)))) {
     throw httpError(409, 'already_given', 'This player already answered today.')
   }
-  const { profanity } = await store.getSettings()
-  const picked = f.q2_would_explore ? cleanInterest(f.q2_interested_solutions, profanity) : []
+  const answers = { q1: f.q1_answer, q2: f.q2_answer, q3: f.q3_answer }
+  for (const q of QUIZ) if (!isQuizOption(q, answers[q.id])) throw httpError(400, 'invalid_answer', 'Please answer all three questions.')
   const saved = await store.insertFeedback({
     feedback_id: f.feedback_id,
     session_id: run.id,
@@ -110,10 +110,10 @@ export async function submitFeedback(store: Store, f: FeedbackSubmission, now: n
     affiliation_type: run.affiliation_type,
     project_name: run.project_name,
     opu: run.opu,
-    q1_relevant: f.q1_relevant,
-    q2_would_explore: f.q2_would_explore,
-    q2_interested_solutions: picked.length ? picked : null,
-    q3_understanding_rating: f.q3_understanding_rating,
+    q1_answer: f.q1_answer,
+    q2_answer: f.q2_answer,
+    q3_answer: f.q3_answer,
+    quiz_score: quizScore(answers),
     game_mode: feedbackModeOf(race.mode),
     submitted_at: at,
     is_test: run.is_test,

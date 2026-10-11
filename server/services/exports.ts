@@ -1,7 +1,7 @@
 import { strToU8, zipSync } from 'fflate'
 import { groupProjects } from '@shared/affiliation'
 import type { ExportTable } from '@shared/dashboard'
-import { FEEDBACK_MODE_LABELS, solutionLabel, type FeedbackFilter } from '@shared/feedback'
+import { FEEDBACK_MODE_LABELS, optionLabel, QUIZ, type FeedbackFilter } from '@shared/feedback'
 import { formatKlDateTime, formatSeconds } from '@shared/time'
 import { MODE_LABELS } from '@shared/types'
 import { AFFILIATION_LABELS } from '@shared/validation'
@@ -141,7 +141,7 @@ export async function feedbackSheet(store: Store, f: FeedbackFilter): Promise<Sh
   return {
     name: 'Feedback',
     rows: [
-      ['Submitted (KL)', 'Full name', 'From', 'Project name', 'Project group', 'OPU', 'Company', 'Game mode', 'Game', 'Q1 Relevant', 'Q2 Would explore', 'Q2 Solutions', 'Q3 Understanding (1-5)', 'Feedback id', 'Game id'],
+      ['Submitted (KL)', 'Full name', 'From', 'Project name', 'Project group', 'OPU', 'Company', 'Game mode', 'Game', ...QUIZ.flatMap((q) => [`${q.id.toUpperCase()} ${q.short} – answer`, `${q.id.toUpperCase()} correct`]), 'Score (0-3)', 'Feedback id', 'Game id'],
       ...rows.map((x) => [
         formatKlDateTime(x.submitted_at),
         x.full_name,
@@ -152,10 +152,11 @@ export async function feedbackSheet(store: Store, f: FeedbackFilter): Promise<Sh
         x.affiliation_type === 'contractor' ? (x.project_name ?? '') : '',
         FEEDBACK_MODE_LABELS[x.game_mode],
         MODE_LABELS[x.race_mode],
-        yesNo(x.q1_relevant),
-        yesNo(x.q2_would_explore),
-        (x.q2_interested_solutions ?? []).map(solutionLabel).join('; '),
-        x.q3_understanding_rating,
+        ...QUIZ.flatMap((q) => {
+          const a = ({ q1: x.q1_answer, q2: x.q2_answer, q3: x.q3_answer } as const)[q.id]
+          return [optionLabel(q, a), a === null ? '' : yesNo(a === q.correct)]
+        }),
+        x.quiz_score ?? '',
         x.feedback_id,
         x.session_id,
       ]),

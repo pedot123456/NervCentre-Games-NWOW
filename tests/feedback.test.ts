@@ -16,10 +16,10 @@ type FeedbackRowDb = {
   player_id: string
   team_id: string | null
   game_mode: string
-  q1_relevant: boolean
-  q2_would_explore: boolean
-  q2_interested_solutions: string[] | null
-  q3_understanding_rating: number
+  q1_answer: string | null
+  q2_answer: string | null
+  q3_answer: string | null
+  quiz_score: number | null
   submitted_at: Date | string
   is_test: boolean
   full_name: string
@@ -28,7 +28,8 @@ type FeedbackRowDb = {
   opu: string | null
 }
 
-const answers = { q1_relevant: true, q2_would_explore: true, q2_interested_solutions: ['orion', 'project-command-centre'], q3_understanding_rating: 4 }
+/** Two right (q1, q3), one wrong (q2). */
+const answers = { q1_answer: 'all', q2_answer: '4', q3_answer: '32' }
 
 describe('Booth feedback (between the game and the result card)', () => {
   let srv: TestServer
@@ -82,13 +83,14 @@ describe('Booth feedback (between the game and the result card)', () => {
     const saved = await srv.store.getRun(seat.run_id)
     assert.ok(saved && (saved.status === 'finished' || saved.status === 'timeout') && saved.ended_at && saved.solved === 1, 'the score is already saved')
 
-    for (const missing of ['q1_relevant', 'q2_would_explore', 'q3_understanding_rating'] as const) {
+    for (const missing of ['q1_answer', 'q2_answer', 'q3_answer'] as const) {
       const body: Record<string, unknown> = { run_id: seat.run_id, token: seat.token, feedback_id: uuid(), ...answers }
       delete body[missing]
       assert.equal((await http(srv.url, '/api/feedback', { json: body })).status, 400, `${missing} is required`)
     }
-    assert.equal((await send(seat, { q3_understanding_rating: 6 })).status, 400, 'stars are 1–5')
-    assert.equal((await send(seat, { q1_relevant: 'yes' })).status, 400, 'yes / no only')
+    assert.equal((await send(seat, { q3_answer: '33' })).status, 400, 'only the listed options')
+    assert.equal((await send(seat, { q1_answer: 'ORION' })).status, 400, 'option ids, not labels')
+    assert.equal((await send(seat, { q2_answer: 5 })).status, 400, 'text ids only')
     assert.equal((await send(seat, { feedback_id: 'not-a-uuid' })).status, 400)
     assert.equal((await send({ ...seat, token: 'wrong' })).status, 404, 'only the device that played can answer')
     assert.equal((await rowsFor(seat.run_id)).length, 0)
@@ -104,20 +106,18 @@ describe('Booth feedback (between the game and the result card)', () => {
     assert.equal(row.game_mode, 'solo')
     assert.equal(row.team_id, null)
     assert.equal(row.is_test, false)
-    assert.deepEqual(row.q2_interested_solutions, ['orion', 'project-command-centre'])
+    assert.deepEqual([row.q1_answer, row.q2_answer, row.q3_answer], ['all', '4', '32'])
+    assert.equal(row.quiz_score, 2, 'two of three right')
     s.disconnect()
   })
 
-  it('solution chips count only with a Yes to question 2', async () => {
-    const no = await soloGame(player('Chip Tester', 'Jerun'))
-    assert.equal((await send(no, { q2_would_explore: false, q2_interested_solutions: ['orion'] })).status, 200)
-    assert.equal((await rowsFor(no.run_id))[0].q2_interested_solutions, null, 'switching to No clears the chips')
-    const yes = await soloGame(player('Chip Picker', 'Jerun'))
-    assert.equal((await send(yes, { q2_interested_solutions: ['quality-plus', 'not-a-solution', 'quality-plus', 'other:  Digital   Twin ', 'other:Second One', 'other:!!'] })).status, 200)
-    assert.deepEqual((await rowsFor(yes.run_id))[0].q2_interested_solutions, ['quality-plus', 'other:Digital Twin'], 'unknown ids dropped, no repeats, one typed-in "Others" name (cleaned)')
-    const none = await soloGame(player('Chip Skipper', 'Jerun'))
-    assert.equal((await send(none, { q2_interested_solutions: [] })).status, 200)
-    assert.equal((await rowsFor(none.run_id))[0].q2_interested_solutions, null, 'chips are optional')
+  it('scores the quiz on the server (0–3 right)', async () => {
+    const perfect = await soloGame(player('Quiz Ace', 'Jerun'))
+    assert.equal((await send(perfect, { q1_answer: 'all', q2_answer: '5', q3_answer: '32' })).status, 200)
+    assert.equal((await rowsFor(perfect.run_id))[0].quiz_score, 3)
+    const none = await soloGame(player('Quiz Miss', 'Jerun'))
+    assert.equal((await send(none, { q1_answer: 'orion', q2_answer: '1', q3_answer: '25' })).status, 200)
+    assert.equal((await rowsFor(none.run_id))[0].quiz_score, 0)
   })
 
   it('asks once per player per day (full name + project / OPU, like the leaderboard); a replay skips it', async () => {
@@ -164,7 +164,7 @@ describe('Booth feedback (between the game and the result card)', () => {
     const run = (await srv.store.getRun(tomorrow.run_id))!
     const dup = await srv.store.insertFeedback({
       feedback_id: uuid(), session_id: run.id, player_id: run.player_id, team_id: null, full_name: run.full_name, affiliation_type: run.affiliation_type,
-      project_name: run.project_name, opu: run.opu, q1_relevant: true, q2_would_explore: false, q2_interested_solutions: null, q3_understanding_rating: 3,
+      project_name: run.project_name, opu: run.opu, q1_answer: 'all', q2_answer: '5', q3_answer: '32', quiz_score: 3,
       game_mode: 'solo', submitted_at: srv.clock(), is_test: false,
     })
     assert.equal(dup, false, 'unique per player per day')
@@ -185,9 +185,9 @@ describe('Booth feedback (between the game and the result card)', () => {
     const seatB = { race_id: room.race.id, run_id: b.run_id, token: b.token }
     assert.equal((await status(seatA)).body.required, true)
     assert.equal((await status(seatB)).body.required, true)
-    assert.equal((await send(seatA, { q1_relevant: true })).status, 200)
+    assert.equal((await send(seatA, { q1_answer: 'all' })).status, 200)
     assert.equal((await status(seatB)).body.required, true, "one player's answer never counts for another")
-    assert.equal((await send(seatB, { q1_relevant: false, q2_would_explore: false, q2_interested_solutions: null })).status, 200)
+    assert.equal((await send(seatB, { q1_answer: 'pcc', q2_answer: '3', q3_answer: '29' })).status, 200)
     assert.equal((await send(seatB, {}, )).status, 409, "a phone can't answer for a teammate twice")
     const [ra] = await rowsFor(a.run_id)
     const [rb] = await rowsFor(b.run_id)
@@ -195,7 +195,8 @@ describe('Booth feedback (between the game and the result card)', () => {
     assert.equal(ra.team_id, room.race.id)
     assert.equal(rb.team_id, room.race.id)
     assert.equal(rb.opu, 'Upstream - SKA')
-    assert.equal(rb.q1_relevant, false)
+    assert.equal(rb.q1_answer, 'pcc')
+    assert.equal(rb.quiz_score, 0)
 
     const kiosk = await srv.connect()
     const h2h = await ask<{ ok: boolean; race: RaceState; runs: { run_id: string; token: string }[] }>(kiosk, 'h2h:start', {
@@ -249,38 +250,24 @@ describe('Booth feedback (between the game and the result card)', () => {
 
     const d = (await http<FeedbackDashboard>(srv.url, '/api/admin/feedback', { token })).body
     const db = srv.store.db
-    const [sql] = await db.query<{ n: number; q1: number; q2: number; avg: number | null }>(
-      `SELECT count(*)::int AS n, count(*) FILTER (WHERE q1_relevant)::int AS q1, count(*) FILTER (WHERE q2_would_explore)::int AS q2,
-              avg(q3_understanding_rating)::float8 AS avg FROM feedback WHERE is_test = false`,
+    const [sql] = await db.query<{ n: number; q1: number; q2: number; q3: number; avg: number | null }>(
+      `SELECT count(*)::int AS n, count(*) FILTER (WHERE q1_answer = 'all')::int AS q1, count(*) FILTER (WHERE q2_answer = '5')::int AS q2,
+              count(*) FILTER (WHERE q3_answer = '32')::int AS q3, avg(quiz_score)::float8 AS avg FROM feedback WHERE is_test = false`,
     )
     assert.ok(sql.n >= 10, `${sql.n} answers so far`)
     assert.equal(d.responses, sql.n)
-    assert.deepEqual(d.q1, { yes: sql.q1, no: sql.n - sql.q1 })
-    assert.deepEqual(d.q2, { yes: sql.q2, no: sql.n - sql.q2 })
-    assert.ok(Math.abs(d.q3.average! - sql.avg!) < 1e-9)
-    const dist = await db.query<{ r: number; n: number }>('SELECT q3_understanding_rating AS r, count(*)::int AS n FROM feedback WHERE is_test = false GROUP BY 1')
-    for (const x of d.q3.distribution) assert.equal(x.count, dist.find((y) => y.r === x.rating)?.n ?? 0, `${x.rating} stars`)
+    assert.deepEqual(
+      d.questions.map((q) => [q.id, q.answered, q.correct]),
+      [['q1', sql.n, sql.q1], ['q2', sql.n, sql.q2], ['q3', sql.n, sql.q3]],
+    )
+    for (const q of d.questions) assert.equal(q.options.reduce((n, o) => n + o.count, 0), q.answered, `${q.id}: every answer is one option`)
+    assert.deepEqual(d.questions.map((q) => q.correct_option), ['All of the above', '5', '32'])
+    assert.ok(Math.abs(d.avg_score! - sql.avg!) < 1e-9)
+    const dist = await db.query<{ s: number; n: number }>('SELECT quiz_score AS s, count(*)::int AS n FROM feedback WHERE is_test = false GROUP BY 1')
+    for (const x of d.score_distribution) assert.equal(x.count, dist.find((y) => y.s === x.score)?.n ?? 0, `${x.score} right`)
     const [games] = await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM runs WHERE status IN ('finished', 'timeout') AND ended_at IS NOT NULL AND is_test = false`)
     assert.equal(d.completed_games, games.n)
     assert.equal(d.response_rate, sql.n / games.n)
-    const interest = await db.query<{ s: string; n: number }>(
-      `SELECT s, count(DISTINCT player_id)::int AS n FROM feedback, unnest(q2_interested_solutions) AS s WHERE is_test = false AND q2_would_explore GROUP BY s`,
-    )
-    for (const s of d.solutions) {
-      // Typed-in "Others" names are grouped ignoring case: compare them the same way.
-      const n = s.id.startsWith('other:') ? interest.filter((x) => x.s.toLowerCase() === s.id.toLowerCase()).reduce((a, x) => a + x.n, 0) : (interest.find((x) => x.s === s.id)?.n ?? 0)
-      assert.equal(s.players, n, s.id)
-    }
-    assert.deepEqual(
-      d.solutions.filter((s) => !s.id.startsWith('other:')).map((s) => s.name).sort(),
-      ['MYICONS', 'ORION', 'Project Command Centre', 'Project Production Management', 'Quality+'],
-      'the five listed solutions are always shown',
-    )
-    assert.deepEqual(
-      d.solutions.map((s) => s.players),
-      [...d.solutions.map((s) => s.players)].sort((a, b) => b - a),
-      'highest first',
-    )
     assert.equal(d.rehearsal_responses, 1)
     assert.ok(!d.by_project.some((p) => p.label === 'Booth Team'), 'rehearsal left out of the breakdown')
     const [biz] = await db.query<{ n: number }>(`SELECT count(*)::int AS n FROM feedback WHERE is_test = false AND opu = 'Upstream - SKA'`)
@@ -308,7 +295,7 @@ describe('Booth feedback (between the game and the result card)', () => {
     const csv = await http<ArrayBuffer>(srv.url, '/api/admin/feedback/export.csv?mode=team', { token })
     assert.equal(csv.status, 200)
     const text = Buffer.from(csv.body).toString('utf8')
-    assert.ok(text.startsWith('﻿"Submitted (KL)","Full name","From","Project name","Project group","OPU","Company","Game mode","Game","Q1 Relevant"'), text.slice(0, 200))
+    assert.ok(text.startsWith('﻿"Submitted (KL)","Full name","From","Project name","Project group","OPU","Company","Game mode","Game","Q1 Featured solution – answer","Q1 correct"'), text.slice(0, 260))
     assert.equal(text.trim().split('\r\n').length, 1 + team.responses)
     assert.ok(!text.includes('Rehearsal Feedback'))
     const xlsx = await http<ArrayBuffer>(srv.url, '/api/admin/feedback/export.xlsx', { token })

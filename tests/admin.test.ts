@@ -162,10 +162,10 @@ describe('Admin', () => {
 
   it('feedback, rehearsal mode, dashboard, exports and test-data removal', async () => {
     const seat = await playSolo(srv, bizPlayer('Feedback Fan', 'Gas & Maritime - MLNG'), 5)
-    const answers = { q1_relevant: true, q2_would_explore: true, q2_interested_solutions: ['orion'], q3_understanding_rating: 5 }
+    const answers = { q1_answer: 'all', q2_answer: '5', q3_answer: '32' }
     const fb = await http(srv.url, '/api/feedback', { json: { ...seat, ...answers, feedback_id: uuid() } })
     assert.equal(fb.status, 200)
-    const again = await http(srv.url, '/api/feedback', { json: { ...seat, ...answers, feedback_id: uuid(), q3_understanding_rating: 4 } })
+    const again = await http(srv.url, '/api/feedback', { json: { ...seat, ...answers, feedback_id: uuid(), q3_answer: '25' } })
     assert.equal(again.status, 409, 'once per player per day')
 
     await http(srv.url, '/api/admin/settings', { method: 'PUT', json: { rehearsal_mode: true }, token })
@@ -178,8 +178,8 @@ describe('Admin', () => {
     assert.ok(dash.kpis.games >= 4)
     assert.equal(dash.kpis.rehearsal_games, 1)
     assert.equal(dash.kpis.feedback, 1)
-    assert.equal(dash.kpis.avg_understanding, 5)
-    assert.equal(dash.interest.find((i) => i.id === 'orion')!.players, 1)
+    assert.equal(dash.kpis.avg_quiz_score, 3)
+    assert.deepEqual(dash.quiz.map((q) => [q.id, q.correct, q.answered]), [['q1', 1, 1], ['q2', 1, 1], ['q3', 1, 1]])
     assert.equal(dash.solutions.length, 6)
     // Project vs Business split, players by OPU (every listed OPU, in list order), players by project name.
     const projectPeople = dash.projects.reduce((n, p) => n + p.players, 0)

@@ -34,9 +34,9 @@ type Step =
   | { s: 'thanks' }
   | { s: 'closed' }
 
-function Shell({ title, children, logos = true }: { title: string; children: ReactNode; logos?: boolean }) {
+function Shell({ title, children, logos = true, fit = false }: { title: string; children: ReactNode; logos?: boolean; fit?: boolean }) {
   return (
-    <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[34rem] flex-col p-4 pt-[max(1rem,env(safe-area-inset-top))]">
+    <div className={`${fit ? 'race-fit ' : ''}relative z-10 mx-auto flex min-h-dvh w-full max-w-[34rem] flex-col p-4 pt-[max(1rem,env(safe-area-inset-top))]`}>
       <header className="mb-3 flex items-center gap-3">
         <NwowBrand compact />
         <p className="ml-auto truncate text-[0.8rem] font-bold uppercase tracking-[0.14em] text-nc-purple-soft">{title}</p>
@@ -311,7 +311,7 @@ function PhoneRace({ race, seat, code, onEnd }: { race: RaceState; seat: Seat; c
   }
 
   return (
-    <Shell title={`Room ${code}`} logos={false}>
+    <Shell title={`Room ${code}`} logos={false} fit>
       <div className="mb-3 flex items-center gap-3">
         <Constellation lit={p?.solved.length ?? 0} showNext={started} className="h-[4.2rem] w-[6rem] shrink-0" />
         <Timer rules={race.rules} goAt={race.go_at} progress={p} size="sm" ticks className="flex-1" />

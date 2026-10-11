@@ -53,7 +53,7 @@ export function Register({ onBack, onHome, onAdmin, onDone }: { onBack: () => vo
   return (
     <KioskFrame title="Register to play" onBack={onBack} onHome={onHome} onAdmin={onAdmin} scroll>
       <div className="flex flex-1 flex-col items-center pb-2">
-        <div className="reg-card w-full max-w-[50rem] p-[max(18px,1.9rem)]">
+        <div className="reg-card w-full max-w-[50rem] p-[max(18px,1.9rem)] phone:p-[18px]">
           <h2 className="font-display text-[max(24px,2.2rem)] font-bold">Who’s playing?</h2>
           <p className="mb-4 mt-1 flex items-start gap-2 text-[max(15px,1.05rem)] text-muted">
             <Timer className="mt-[0.2em] size-[1.1em] shrink-0 text-nc-green" aria-hidden="true" />

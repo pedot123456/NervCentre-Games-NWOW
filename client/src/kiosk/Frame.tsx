@@ -12,6 +12,8 @@ interface Props {
   children: ReactNode
   /** Content scrolls instead of fitting the screen. */
   scroll?: boolean
+  /** Races: on short phones everything (up to Skip) fits on one screen – see .race-fit. */
+  fit?: boolean
   className?: string
 }
 
@@ -19,10 +21,10 @@ interface Props {
  * The page shell of every kiosk screen after Home: header (Back, NWOW brand, title, controls,
  * Home, sound, full screen) and the page. Back and Home never show during a race or the feedback.
  */
-export function KioskFrame({ title, onBack, onHome, onAdmin, right, children, scroll = false, className = '' }: Props) {
+export function KioskFrame({ title, onBack, onHome, onAdmin, right, children, scroll = false, fit = false, className = '' }: Props) {
   return (
     <div
-      className={`relative z-10 mx-auto flex w-full max-w-[112rem] flex-col px-[2.4rem] pb-[1.4rem] pt-[max(1.1rem,env(safe-area-inset-top))] phone:min-h-dvh phone:px-4 portrait:min-h-dvh max-[700px]:min-h-dvh ${scroll ? 'min-h-dvh' : 'h-dvh phone:h-auto portrait:h-auto max-[700px]:h-auto'}`}
+      className={`${fit ? 'race-fit ' : ''}relative z-10 mx-auto flex w-full max-w-[112rem] flex-col px-[2.4rem] pb-[1.4rem] pt-[max(1.1rem,env(safe-area-inset-top))] phone:min-h-dvh phone:px-4 portrait:min-h-dvh max-[700px]:min-h-dvh ${scroll ? 'min-h-dvh' : 'h-dvh phone:h-auto portrait:h-auto max-[700px]:h-auto'}`}
     >
       <header className="mb-4 flex flex-wrap items-center gap-4 phone:gap-x-2 phone:gap-y-3">
         {onBack && (
