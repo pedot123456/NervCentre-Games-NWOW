@@ -1,7 +1,7 @@
 import { opuKey } from '@shared/affiliation'
 import type { DashboardData } from '@shared/dashboard'
 import type { FeedbackBreakdownRow, FeedbackDashboard, FeedbackFilter, FeedbackMode, QuizResult } from '@shared/feedback'
-import { feedbackModeOf, QUIZ, type QuizId } from '@shared/feedback'
+import { feedbackModeOf, interestCounts, QUIZ, type QuizId } from '@shared/feedback'
 import { DAY_MS, klDayKey, klDayRange, klHour } from '@shared/time'
 import type { GameMode } from '@shared/types'
 import { AFFILIATION_TYPES, type AffiliationType } from '@shared/validation'
@@ -139,6 +139,7 @@ export async function dashboard(store: Store, f: DashFilter): Promise<DashboardD
       avg_solved: avg(runs.map((r) => r.solved)),
       battles: new Set(runs.filter((r) => r.mode !== 'solo').map((r) => r.race_id)).size,
       feedback: feedback.length,
+      avg_understanding: avg(feedback.map((x) => x.q3_understanding_rating)),
       avg_quiz_score: avg(quizRows(feedback).map((x) => x.quiz_score!)),
       rehearsal_games: rehearsal,
     },
@@ -152,6 +153,7 @@ export async function dashboard(store: Store, f: DashFilter): Promise<DashboardD
       .map((p) => ({ key: p.key, label: p.label, players: p.players.size, games: p.games, best_time_ms: minOf(p.best) }))
       .sort((a, b) => b.players - a.players || b.games - a.games || a.label.localeCompare(b.label)),
     modes: (['solo', 'battle', 'h2h'] as GameMode[]).map((mode) => ({ mode, games: runs.filter((r) => r.mode === mode).length })),
+    interest: interestCounts(feedback),
     quiz: quizResults(quizRows(feedback)).map((q) => ({ id: q.id, short: q.short, answered: q.answered, correct: q.correct })),
   }
 }
@@ -187,7 +189,7 @@ function matches(f: FeedbackFilter, x: { mode: FeedbackMode; affiliation_type: A
 
 const answerOf = (x: FeedbackRecord, id: QuizId) => ({ q1: x.q1_answer, q2: x.q2_answer, q3: x.q3_answer })[id]
 
-/** Answers given to the quiz (answers to the earlier questions have no quiz score). */
+/** Answers that include the quiz (answers given before the quiz have no quiz score). */
 const quizRows = (rows: FeedbackRecord[]) => rows.filter((x) => x.quiz_score !== null)
 
 function quizResults(rows: FeedbackRecord[]): QuizResult[] {
@@ -225,6 +227,9 @@ function breakdown(rows: FeedbackRecord[], keyOf: (x: FeedbackRecord) => { key: 
       key,
       label: v.label,
       responses: v.rows.length,
+      q1_yes: v.rows.filter((x) => x.q1_relevant).length,
+      q2_yes: v.rows.filter((x) => x.q2_would_explore).length,
+      q3_average: avg(v.rows.map((x) => x.q3_understanding_rating)),
       avg_score: avg(quizRows(v.rows).map((x) => x.quiz_score!)),
       correct: Object.fromEntries(QUIZ.map((q) => [q.id, v.rows.filter((x) => answerOf(x, q.id) === q.correct).length])) as Record<QuizId, number>,
     }))
@@ -245,6 +250,13 @@ export async function feedbackDashboard(store: Store, f: FeedbackFilter): Promis
     responses: rows.length,
     completed_games: runs.length,
     response_rate: runs.length ? rows.length / runs.length : null,
+    q1: { yes: rows.filter((x) => x.q1_relevant).length, no: rows.filter((x) => !x.q1_relevant).length },
+    q2: { yes: rows.filter((x) => x.q2_would_explore).length, no: rows.filter((x) => !x.q2_would_explore).length },
+    q3: {
+      average: avg(rows.map((x) => x.q3_understanding_rating)),
+      distribution: [1, 2, 3, 4, 5].map((rating) => ({ rating, count: rows.filter((x) => x.q3_understanding_rating === rating).length })),
+    },
+    solutions: interestCounts(rows),
     avg_score: avg(quizRows(rows).map((x) => x.quiz_score!)),
     score_distribution: [0, 1, 2, 3].map((score) => ({ score, count: rows.filter((x) => x.quiz_score === score).length })),
     questions: quizResults(quizRows(rows)),

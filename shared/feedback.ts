@@ -1,11 +1,11 @@
 import type { GameMode } from './types'
-import type { AffiliationType } from './validation'
+import { checkProjectName, type AffiliationType } from './validation'
 
 /**
- * Booth quiz: three one-tap multiple-choice questions between the end of a game and the result card.
- * Each answer shows straight away whether it was right. Asked once per player per KL day
- * (player = normalised full name + project name, OPU or company, as on the boards); a replay the
- * same day goes straight to the result card.
+ * After a game: a three-question quiz about the booth (each answer shows straight away whether it
+ * was right), then the three one-tap feedback questions, then the result card. Asked once per
+ * player per KL day (player = normalised full name + project name, OPU or company, as on the
+ * boards); a replay the same day goes straight to the result card.
  */
 
 export type FeedbackMode = 'solo' | 'team'
@@ -20,11 +20,91 @@ export const FEEDBACK_MODE_LABELS: Record<FeedbackMode, string> = {
 
 export const FEEDBACK_COPY = {
   heading: '🎉 Great game! Your score is ready.',
+  quiz_intro: 'Quick quiz – 3 questions about the booth.',
+  quiz_correct: 'Correct!',
+  quiz_wrong: 'Not quite – the answer is',
+  next: 'Next',
+  feedback_heading: 'Your feedback',
   intro: 'Answer 3 quick questions to see your result.',
-  correct: 'Correct!',
-  wrong: 'Not quite – the answer is',
+  q1: 'Was the information shared at the booth relevant to your project or business needs?',
+  q2: 'Would you consider adopting or exploring any of the solutions showcased?',
+  q2_chips: 'Which ones? (optional – pick any)',
+  q3: 'Did the booth help you better understand the available digital solutions?',
   submit: 'See My Result',
 } as const
+
+/**
+ * The solutions players can pick under question 2 (independent of the game's word-tile solutions).
+ * "Others" lets them type a name; it is stored as "other:<name>" in q2_interested_solutions.
+ */
+export const FEEDBACK_SOLUTIONS = [
+  { id: 'orion', name: 'ORION' },
+  { id: 'project-command-centre', name: 'Project Command Centre' },
+  { id: 'myicons', name: 'MYICONS' },
+  { id: 'quality-plus', name: 'Quality+' },
+  { id: 'project-production-management', name: 'Project Production Management' },
+] as const
+
+export const OTHER_SOLUTION_PREFIX = 'other:'
+export const OTHER_SOLUTION_LABEL = 'Others'
+
+/** "other:Digital Twin" → "Digital Twin"; null for a listed solution id. */
+export const otherSolutionName = (v: string): string | null => (v.startsWith(OTHER_SOLUTION_PREFIX) ? v.slice(OTHER_SOLUTION_PREFIX.length) : null)
+
+/** Display name of a stored answer: the listed name, or "Others: <typed name>". */
+export function solutionLabel(v: string): string {
+  const other = otherSolutionName(v)
+  if (other !== null) return `${OTHER_SOLUTION_LABEL}: ${other}`
+  return FEEDBACK_SOLUTIONS.find((s) => s.id === v)?.name ?? v
+}
+
+/**
+ * Cleans the answers to question 2: listed ids and at most one typed-in name (checked like a
+ * project name, blocked words included); unknown ids and repeats are dropped.
+ */
+export function cleanInterest(raw: readonly string[] | null | undefined, profanity: readonly string[] = []): string[] {
+  const out: string[] = []
+  let other = false
+  for (const v of raw ?? []) {
+    const typed = otherSolutionName(v)
+    if (typed !== null) {
+      const c = checkProjectName(typed, profanity)
+      if (c.ok && !other) {
+        out.push(OTHER_SOLUTION_PREFIX + c.value)
+        other = true
+      }
+    } else if (FEEDBACK_SOLUTIONS.some((s) => s.id === v) && !out.includes(v)) {
+      out.push(v)
+    }
+  }
+  return out
+}
+
+/** Distinct players per listed solution, then per typed-in name (grouped ignoring case), highest first. */
+export function interestCounts(rows: readonly { player_id: string; q2_would_explore: boolean; q2_interested_solutions: string[] | null }[]): { id: string; name: string; players: number }[] {
+  const yes = rows.filter((x) => x.q2_would_explore)
+  const listed = FEEDBACK_SOLUTIONS.map((s) => ({
+    id: s.id as string,
+    name: s.name as string,
+    players: new Set(yes.filter((x) => x.q2_interested_solutions?.includes(s.id)).map((x) => x.player_id)).size,
+  }))
+  const others = new Map<string, { name: string; players: Set<string> }>()
+  for (const x of yes) {
+    for (const v of x.q2_interested_solutions ?? []) {
+      const typed = otherSolutionName(v)
+      if (typed === null) continue
+      const key = typed.toLowerCase()
+      const o = others.get(key) ?? { name: typed, players: new Set<string>() }
+      o.players.add(x.player_id)
+      others.set(key, o)
+    }
+  }
+  const typed = [...others.entries()].map(([key, o]) => ({ id: OTHER_SOLUTION_PREFIX + key, name: `${OTHER_SOLUTION_LABEL}: ${o.name}`, players: o.players.size }))
+  return [...listed, ...typed].sort((a, b) => b.players - a.players)
+}
+
+/** Label under the stars for ratings 1–5. */
+export const UNDERSTANDING_LABELS = ['', 'Not at all', 'A little', 'Somewhat', 'Yes', 'Very much'] as const
 
 export type QuizId = 'q1' | 'q2' | 'q3'
 
@@ -92,7 +172,12 @@ export interface FeedbackSubmission {
   feedback_id: string
   run_id: string
   token: string
-  /** Option ids picked for the three questions. */
+  q1_relevant: boolean
+  q2_would_explore: boolean
+  /** FEEDBACK_SOLUTIONS ids and/or one "other:<name>" – only with a Yes to question 2 (optional, any number). */
+  q2_interested_solutions: string[] | null
+  q3_understanding_rating: number
+  /** Quiz: option ids picked for the three quiz questions. */
   q1_answer: string
   q2_answer: string
   q3_answer: string
@@ -131,9 +216,11 @@ export interface FeedbackBreakdownRow {
   key: string
   label: string
   responses: number
-  /** Average right answers (0–3). */
+  q1_yes: number
+  q2_yes: number
+  q3_average: number | null
+  /** Quiz: average right answers (0–3) and right answers per question. */
   avg_score: number | null
-  /** Right answers per question. */
   correct: Record<QuizId, number>
 }
 
@@ -160,9 +247,13 @@ export interface FeedbackDashboard {
   completed_games: number
   /** responses ÷ completed_games */
   response_rate: number | null
-  /** Average right answers (0–3). */
+  q1: { yes: number; no: number }
+  q2: { yes: number; no: number }
+  q3: { average: number | null; distribution: { rating: number; count: number }[] }
+  /** Distinct players who picked each solution under question 2, highest first. */
+  solutions: { id: string; name: string; players: number }[]
+  /** Quiz: average right answers (0–3), players by score, and each question's results. */
   avg_score: number | null
-  /** Players by number of right answers 0–3. */
   score_distribution: { score: number; count: number }[]
   questions: QuizResult[]
   /** Business answers per OPU (most answers first). */

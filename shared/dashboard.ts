@@ -18,6 +18,8 @@ export interface DashboardData {
     battles: number
     /** Feedback answers (real games only). */
     feedback: number
+    /** Average of feedback question 3 (1–5 stars). */
+    avg_understanding: number | null
     /** Average right quiz answers (0–3). */
     avg_quiz_score: number | null
     /** Rehearsal games in the same period (not counted anywhere else). */
@@ -44,6 +46,8 @@ export interface DashboardData {
   /** Players per project (spellings grouped, Admin merges applied). */
   projects: { key: string; label: string; players: number; games: number; best_time_ms: number | null }[]
   modes: { mode: GameMode; games: number }[]
+  /** Distinct players interested in each solution (feedback question 2), highest first. */
+  interest: { id: string; name: string; players: number }[]
   /** Right answers per quiz question. */
   quiz: { id: string; short: string; answered: number; correct: number }[]
 }

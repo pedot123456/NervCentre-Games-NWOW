@@ -89,7 +89,7 @@ export function DashboardTab() {
         <StatTile label="Avg stars lit" value={k?.avg_solved == null ? dash : k.avg_solved.toFixed(1)} note="out of 6" />
         <StatTile label="Fastest" value={k?.fastest_ms == null ? dash : `${formatSeconds(k.fastest_ms)} s`} note="all 6 solved" />
         <StatTile label="Avg finish" value={k?.avg_finish_ms == null ? dash : `${formatSeconds(k.avg_finish_ms)} s`} note="games with all 6" />
-        <StatTile label="Quiz score" value={k?.avg_quiz_score == null ? dash : `${k.avg_quiz_score.toFixed(1)} / 3`} note={`average right · ${k?.feedback ?? 0} players`} />
+        <StatTile label="Understanding" value={k?.avg_understanding == null ? dash : `${k.avg_understanding.toFixed(1)} / 5`} note={`feedback Q3 · ${k?.feedback ?? 0} answers`} />
         <StatTile label="Feedback rate" value={k && k.games ? pct(k.feedback / k.games) : dash} note="of games · details under Feedback" />
       </div>
 
@@ -176,8 +176,16 @@ export function DashboardTab() {
           </ChartCard>
 
           <ChartCard
+            title="Solution interest"
+            subtitle="Players who picked each solution in feedback Q2 – more under Feedback"
+            table={<DataTable head={['Solution', 'Players']} rows={d.interest.map((i) => [i.name, i.players])} />}
+          >
+            <Bars data={d.interest.map((i) => ({ label: i.name, value: i.players, note: 'players' }))} />
+          </ChartCard>
+
+          <ChartCard
             title="Quiz – right answers"
-            subtitle="Share of players who answered each question right – more under Feedback"
+            subtitle={`Share of players who answered each quiz question right${k?.avg_quiz_score == null ? '' : ` · average ${k.avg_quiz_score.toFixed(1)} / 3`} – more under Feedback`}
             table={<DataTable head={['Question', 'Right', 'Answered']} rows={d.quiz.map((q) => [`${q.id.toUpperCase()} · ${q.short}`, q.correct, q.answered])} />}
           >
             <Bars max={100} format={(v) => `${v}%`} data={d.quiz.map((q) => ({ label: `${q.id.toUpperCase()} · ${q.short}`, value: q.answered ? Math.round((q.correct / q.answered) * 100) : 0, note: `${q.correct} of ${q.answered}` }))} />

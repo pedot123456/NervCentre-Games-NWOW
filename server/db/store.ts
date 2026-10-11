@@ -106,11 +106,14 @@ export interface FeedbackRow {
   affiliation_type: AffiliationType
   project_name: string | null
   opu: string | null
-  /** Quiz option ids; null on answers given before the quiz (the earlier questions). */
+  q1_relevant: boolean
+  q2_would_explore: boolean
+  q2_interested_solutions: string[] | null
+  q3_understanding_rating: number
+  /** Quiz option ids and right answers 0–3; null on answers given before the quiz. */
   q1_answer: string | null
   q2_answer: string | null
   q3_answer: string | null
-  /** Right answers 0–3; null before the quiz. */
   quiz_score: number | null
   game_mode: FeedbackMode
   submitted_at: number
@@ -499,11 +502,13 @@ export class Store {
   async insertFeedback(f: FeedbackRow): Promise<boolean> {
     const rows = await this.db.query(
       `INSERT INTO feedback (feedback_id, session_id, player_id, team_id, full_name, affiliation_type, project_name, opu,
+                             q1_relevant, q2_would_explore, q2_interested_solutions, q3_understanding_rating,
                              q1_answer, q2_answer, q3_answer, quiz_score, game_mode, submitted_at, is_test)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        ON CONFLICT DO NOTHING RETURNING feedback_id`,
       [
         f.feedback_id, f.session_id, f.player_id, f.team_id, f.full_name, f.affiliation_type, f.project_name, f.opu,
+        f.q1_relevant, f.q2_would_explore, f.q2_interested_solutions, f.q3_understanding_rating,
         f.q1_answer, f.q2_answer, f.q3_answer, f.quiz_score, f.game_mode, iso(f.submitted_at), f.is_test,
       ],
     )
@@ -547,6 +552,10 @@ export class Store {
       affiliation_type: r.affiliation_type as AffiliationType,
       project_name: (r.project_name as string) ?? null,
       opu: (r.opu as string) ?? null,
+      q1_relevant: !!r.q1_relevant,
+      q2_would_explore: !!r.q2_would_explore,
+      q2_interested_solutions: Array.isArray(r.q2_interested_solutions) ? (r.q2_interested_solutions as string[]) : null,
+      q3_understanding_rating: Number(r.q3_understanding_rating),
       q1_answer: (r.q1_answer as string) ?? null,
       q2_answer: (r.q2_answer as string) ?? null,
       q3_answer: (r.q3_answer as string) ?? null,

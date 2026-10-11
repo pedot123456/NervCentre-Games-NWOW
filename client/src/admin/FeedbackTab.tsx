@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Download, FileSpreadsheet } from 'lucide-react'
-import { QUIZ, type FeedbackDashboard } from '@shared/feedback'
+import { Download, FileSpreadsheet, Star } from 'lucide-react'
+import { FEEDBACK_COPY, QUIZ, type FeedbackDashboard } from '@shared/feedback'
 import { klDayKey } from '@shared/time'
 import { api, ApiError, download, pct } from './api'
-import { Bars, ChartCard, ColumnChart, DataTable } from './charts'
+import { Bars, ChartCard, ColumnChart, DataTable, Donut, SERIES } from './charts'
 import { FieldLabel, Note, SectionCard, StatTile, TD, TH, useAdminData } from './shared'
+
+const NO = '#98a2b3'
 
 export function FeedbackTab() {
   const [from, setFrom] = useState('')
@@ -19,7 +21,6 @@ export function FeedbackTab() {
   const today = klDayKey(Date.now())
   const dl = (path: string) => download(path).catch((e: ApiError) => setExportError(e.message))
   const rows = by === 'opu' ? (d?.by_opu ?? []) : (d?.by_project ?? [])
-  const hardest = (d?.questions ?? []).filter((q) => q.answered).sort((a, b) => a.correct / a.answered - b.correct / b.answered)[0]
 
   return (
     <>
@@ -95,31 +96,76 @@ export function FeedbackTab() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <StatTile label="Responses" value={d?.responses ?? '—'} note="one per player per day" />
         <StatTile label="Response rate" value={pct(d?.response_rate)} note={`of ${d?.completed_games ?? 0} completed games`} />
-        <StatTile label="Average score" value={d?.avg_score == null ? '—' : `${d.avg_score.toFixed(1)} / ${QUIZ.length}`} note="right answers per player" />
-        <StatTile label="All right" value={d && d.responses ? pct((d.score_distribution.find((x) => x.score === QUIZ.length)?.count ?? 0) / d.responses) : '—'} note={`${QUIZ.length} of ${QUIZ.length} correct`} />
-        <StatTile label="Hardest question" value={hardest ? hardest.id.toUpperCase() : '—'} note={hardest ? `${pct(hardest.correct / hardest.answered)} right · ${hardest.short}` : 'no answers yet'} />
+        <StatTile label="Relevant" value={d && d.responses ? pct(d.q1.yes / d.responses) : '—'} note="Q1 Yes" />
+        <StatTile label="Would explore" value={d && d.responses ? pct(d.q2.yes / d.responses) : '—'} note="Q2 Yes" />
+        <StatTile label="Understanding" value={d?.q3.average == null ? '—' : `${d.q3.average.toFixed(1)} / 5`} note="Q3 average stars" />
       </div>
 
       {d && (
         <div className="grid gap-5 xl:grid-cols-2">
-          {d.questions.map((q) => (
-            <ChartCard
-              key={q.id}
-              title={`${q.id.toUpperCase()} · ${q.short}`}
-              subtitle={`${q.text} Answer: ${q.correct_option}`}
-              table={<DataTable head={['Answer', 'Players', 'Right?']} rows={q.options.map((o) => [o.label, o.count, o.correct ? 'Yes' : ''])} />}
-            >
-              <p className="mb-3 text-sm">
-                <span className="text-2xl font-extrabold">{pct(q.answered ? q.correct / q.answered : null)}</span> <span className="text-muted">answered right ({q.correct} of {q.answered})</span>
-              </p>
-              <Bars data={q.options.map((o) => ({ label: o.correct ? `${o.label} ✓` : o.label, value: o.count, note: 'players' }))} />
+          {(
+            [
+              ['Q1 · Information relevant', FEEDBACK_COPY.q1, d.q1],
+              ['Q2 · Would explore the solutions', FEEDBACK_COPY.q2, d.q2],
+            ] as const
+          ).map(([title, sub, v]) => (
+            <ChartCard key={title} title={title} subtitle={sub} table={<DataTable head={['Answer', 'Count']} rows={[['Yes', v.yes], ['No', v.no]]} />}>
+              <Donut
+                parts={[
+                  { label: 'Yes', value: v.yes, color: SERIES },
+                  { label: 'No', value: v.no, color: NO },
+                ]}
+                center={pct(v.yes + v.no ? v.yes / (v.yes + v.no) : null)}
+                centerLabel="said Yes"
+              />
             </ChartCard>
           ))}
 
-          <ChartCard title="Scores" subtitle="Players by number of right answers" table={<DataTable head={['Right answers', 'Players']} rows={d.score_distribution.map((x) => [`${x.score} / ${QUIZ.length}`, x.count])} />}>
-            <ColumnChart data={d.score_distribution.map((x) => ({ label: `${x.score} / ${QUIZ.length}`, value: x.count, tip: `players with ${x.score} right` }))} />
+          <ChartCard title="Q3 · Understanding" subtitle={FEEDBACK_COPY.q3} table={<DataTable head={['Stars', 'Answers']} rows={d.q3.distribution.map((x) => [`${x.rating} ★`, x.count])} />}>
+            {d.q3.average !== null && (
+              <div className="mb-3 flex items-center gap-3">
+                <span className="text-3xl font-extrabold">{d.q3.average.toFixed(1)}</span>
+                <span className="flex">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star key={n} className={`size-5 ${n <= Math.round(d.q3.average!) ? 'fill-nc-yellow text-nc-yellow' : 'text-[#c5cfdb]'}`} aria-hidden="true" />
+                  ))}
+                </span>
+                <span className="text-muted">average of {d.responses}</span>
+              </div>
+            )}
+            <ColumnChart data={d.q3.distribution.map((x) => ({ label: `${x.rating} ★`, value: x.count, tip: `answers with ${x.rating} stars` }))} />
+          </ChartCard>
+
+          <ChartCard title="Solution interest" subtitle="Players who picked each solution under Q2 (highest first)" table={<DataTable head={['Solution', 'Players']} rows={d.solutions.map((s) => [s.name, s.players])} />}>
+            <Bars data={d.solutions.map((s) => ({ label: s.name, value: s.players, note: 'players' }))} />
           </ChartCard>
         </div>
+      )}
+
+      {d && (
+        <SectionCard title="Quiz" actions={<span className="text-sm text-muted">{d.avg_score === null ? 'No quiz answers yet' : `Average ${d.avg_score.toFixed(1)} of ${QUIZ.length} right`}</span>}>
+          <div className="grid gap-5 xl:grid-cols-2">
+            {d.questions.map((q) => (
+              <ChartCard
+                key={q.id}
+                title={`Quiz ${q.id.toUpperCase()} · ${q.short}`}
+                subtitle={`${q.text} Answer: ${q.correct_option}`}
+                table={<DataTable head={['Answer', 'Players', 'Right?']} rows={q.options.map((o) => [o.label, o.count, o.correct ? 'Yes' : ''])} />}
+              >
+                <p className="mb-3 text-sm">
+                  <span className="text-2xl font-extrabold">{pct(q.answered ? q.correct / q.answered : null)}</span>{' '}
+                  <span className="text-muted">
+                    answered right ({q.correct} of {q.answered})
+                  </span>
+                </p>
+                <Bars data={q.options.map((o) => ({ label: o.correct ? `${o.label} ✓` : o.label, value: o.count, note: 'players' }))} />
+              </ChartCard>
+            ))}
+            <ChartCard title="Quiz scores" subtitle="Players by number of right answers" table={<DataTable head={['Right answers', 'Players']} rows={d.score_distribution.map((x) => [`${x.score} / ${QUIZ.length}`, x.count])} />}>
+              <ColumnChart data={d.score_distribution.map((x) => ({ label: `${x.score} / ${QUIZ.length}`, value: x.count, tip: `players with ${x.score} right` }))} />
+            </ChartCard>
+          </div>
+        </SectionCard>
       )}
 
       <SectionCard
@@ -143,12 +189,10 @@ export function FeedbackTab() {
                 <tr>
                   <th className={TH}>{by === 'opu' ? 'OPU' : 'Project name'}</th>
                   <th className={TH}>Responses</th>
-                  <th className={TH}>Average score</th>
-                  {QUIZ.map((q) => (
-                    <th key={q.id} className={TH}>
-                      {q.id.toUpperCase()} right
-                    </th>
-                  ))}
+                  <th className={TH}>Relevant (Q1 Yes)</th>
+                  <th className={TH}>Would explore (Q2 Yes)</th>
+                  <th className={TH}>Understanding (Q3 avg)</th>
+                  <th className={TH}>Quiz (avg right)</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,12 +200,14 @@ export function FeedbackTab() {
                   <tr key={r.key} className="border-t border-line">
                     <td className={TD}>{r.label}</td>
                     <td className={TD}>{r.responses}</td>
+                    <td className={TD}>
+                      {pct(r.q1_yes / r.responses)} ({r.q1_yes})
+                    </td>
+                    <td className={TD}>
+                      {pct(r.q2_yes / r.responses)} ({r.q2_yes})
+                    </td>
+                    <td className={TD}>{r.q3_average === null ? '—' : `${r.q3_average.toFixed(1)} / 5`}</td>
                     <td className={TD}>{r.avg_score === null ? '—' : `${r.avg_score.toFixed(1)} / ${QUIZ.length}`}</td>
-                    {QUIZ.map((q) => (
-                      <td key={q.id} className={TD}>
-                        {pct(r.correct[q.id] / r.responses)} ({r.correct[q.id]})
-                      </td>
-                    ))}
                   </tr>
                 ))}
               </tbody>

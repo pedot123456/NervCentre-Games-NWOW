@@ -108,13 +108,17 @@ export function registerPublicRoutes(app: FastifyInstance, svc: Services) {
         feedback_id: z.uuid(),
         run_id: z.string().max(64),
         token: z.string().max(200),
+        q1_relevant: z.boolean(),
+        q2_would_explore: z.boolean(),
+        q2_interested_solutions: z.array(z.string().max(120)).max(20).nullable().optional(),
+        q3_understanding_rating: z.number().int().min(1).max(5),
         q1_answer: z.string().max(20),
         q2_answer: z.string().max(20),
         q3_answer: z.string().max(20),
         answered_at: z.number().optional(),
       })
       .parse(req.body)
-    return submitFeedback(store, { ...body, answered_at: body.answered_at ?? svc.clock() }, svc.clock())
+    return submitFeedback(store, { ...body, q2_interested_solutions: body.q2_interested_solutions ?? null, answered_at: body.answered_at ?? svc.clock() }, svc.clock())
   })
 
   app.post('/api/rt/:event', async (req, reply) => {

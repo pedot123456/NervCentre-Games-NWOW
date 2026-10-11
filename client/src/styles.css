@@ -576,18 +576,82 @@
     cursor: default;
     transform: none;
   }
-  .fb-choice[data-result="correct"] {
+  .fb-choice[role="radio"][data-result="correct"] {
     background: var(--color-nc-green);
     border-color: var(--color-nc-green);
     color: #fff;
   }
-  .fb-choice[data-result="wrong"] {
+  .fb-choice[role="radio"][data-result="wrong"] {
     background: var(--color-nc-red);
     border-color: var(--color-nc-red);
     color: #fff;
   }
   .fb-choice[data-result="dim"] {
     opacity: 0.5;
+  }
+  .fb-choice[aria-checked="true"],
+  .fb-chip[aria-checked="true"] {
+    background: var(--color-nc-lime);
+    border-color: var(--color-nc-lime);
+    color: var(--color-nc-navy);
+  }
+  .fb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    min-height: max(44px, 2.9rem);
+    padding: 0.35rem 0.95rem;
+    border-radius: 9999px;
+    border: 2px solid var(--color-line);
+    background: #fff;
+    color: var(--color-nc-navy);
+    font-size: max(14px, 0.95rem);
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: left;
+    transition: background-color 0.15s, border-color 0.15s, transform 0.12s;
+  }
+  .fb-chip:active {
+    transform: scale(0.97);
+  }
+  .fb-other {
+    width: 100%;
+    min-height: max(48px, 3rem);
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.8rem;
+    border: 2px solid var(--color-line);
+    background: #fff;
+    color: var(--color-nc-navy);
+    font-size: max(16px, 1rem);
+    font-weight: 600;
+  }
+  .fb-other:focus {
+    outline: none;
+    border-color: var(--color-nc-blue);
+  }
+  .fb-star {
+    display: grid;
+    place-items: center;
+    width: max(48px, 3.3rem);
+    height: max(48px, 3.3rem);
+    border-radius: 0.9rem;
+    color: #98a2b3;
+  }
+  .fb-star svg {
+    width: 82%;
+    height: 82%;
+    fill: transparent;
+    stroke-width: 1.8;
+    transition: fill 0.15s, color 0.15s;
+  }
+  .fb-star[data-on="true"] {
+    color: var(--color-nc-yellow);
+  }
+  .fb-star[data-on="true"] svg {
+    fill: var(--color-nc-yellow);
+  }
+  .fb-star[data-pop="true"] svg {
+    animation: fb-pop 0.38s cubic-bezier(0.2, 1.4, 0.4, 1);
   }
   .fb-submit {
     display: flex;
@@ -686,7 +750,12 @@
   100% { box-shadow: 0 0 0 0.6rem rgb(191 215 48 / 0); }
 }
 
-/* Quiz: the gentle pulse of the ready button, the sending spinner. */
+/* Feedback: star "pop", the gentle pulse of the ready button, the sending spinner. */
+@keyframes fb-pop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
 @keyframes fb-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgb(0 161 156 / 0.45); }
   50% { box-shadow: 0 0 0 0.55rem rgb(0 161 156 / 0); }
