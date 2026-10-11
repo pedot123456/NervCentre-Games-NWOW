@@ -37,8 +37,10 @@ npm start                # one server for everything on :8090 (booth laptop, no 
 ## Deploy online: Vercel + Supabase
 
 1. **Database – Supabase:** create a free project at [supabase.com](https://supabase.com), region
-   **Southeast Asia (Singapore)**. Then **Connect → Transaction pooler** and copy the connection
-   string (port `6543`), with your database password in it. The app creates its tables itself.
+   **Northeast Asia (Tokyo)** (the API runs next to it; for another region set
+   `VERCEL_FUNCTION_REGION`, e.g. `sin1` for Singapore). Then **Connect → Transaction pooler** and copy
+   the connection string (port `6543`), with your database password in it (special characters in
+   the password percent-encoded, e.g. `/` → `%2F`). The app creates its tables itself.
 2. **Vercel:** push this folder to GitHub, then on [vercel.com](https://vercel.com) **Add New →
    Project** and import the repository. Build settings come from `vercel.json`; leave them. Add two
    **Environment Variables**:
@@ -58,8 +60,8 @@ npm run preview:vercel   # serve that output the way Vercel does, on http://loca
 
 ### How it works on Vercel
 
-The website is served from Vercel's CDN; the whole API is one serverless function in Singapore
-(`sin1`, next to the database). Nothing is kept in server memory – every race, game, Admin session
+The website is served from Vercel's CDN; the whole API is one serverless function in Tokyo
+(`hnd1`, next to the database). Nothing is kept in server memory – every race, game, Admin session
 and backup is in the database, so any instance can answer any request:
 
 - **Live updates:** the original app pushed updates over Socket.IO, which serverless hosting can't

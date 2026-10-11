@@ -5,8 +5,9 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { build } from 'esbuild'
 
-// Singapore, next to the Supabase project (create it in "Southeast Asia (Singapore)").
-const REGION = process.env.VERCEL_FUNCTION_REGION || 'sin1'
+// Tokyo, next to the Supabase project (ap-northeast-1): every request makes several database calls,
+// so the API must run in the database's region. Override with VERCEL_FUNCTION_REGION if the database moves.
+const REGION = process.env.VERCEL_FUNCTION_REGION || 'hnd1'
 
 const out = '.vercel/output'
 const fn = `${out}/functions/api.func`
