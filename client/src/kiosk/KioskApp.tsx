@@ -96,7 +96,7 @@ export function KioskApp({ onAdmin }: { onAdmin: () => void }) {
             onAdmin={onAdmin}
           />
           {splash && (
-            <Splash title={config?.settings.event_title ?? 'PMX Digital Challenge'} subtitle={config?.settings.event_subtitle ?? 'Powering Project Delivery Through Digital'} onDone={() => setSplash(false)} />
+            <Splash title={config?.settings.event_title ?? 'NWOW Digital Challenge'} subtitle={config?.settings.event_subtitle ?? 'Powering Project Delivery Through Digital'} onDone={() => setSplash(false)} />
           )}
         </>
       )

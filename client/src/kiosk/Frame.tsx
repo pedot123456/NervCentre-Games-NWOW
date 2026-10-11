@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ArrowLeft, House } from 'lucide-react'
-import { PmxBrand } from '../components/Brand'
+import { NwowBrand } from '../components/Brand'
 import { FullscreenToggle, IconButton, SoundToggle } from '../components/ui'
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 }
 
 /**
- * The page shell of every kiosk screen after Home: header (Back, PMX brand, title, controls,
+ * The page shell of every kiosk screen after Home: header (Back, NWOW brand, title, controls,
  * Home, sound, full screen) and the page. Back and Home never show during a race or the feedback.
  */
 export function KioskFrame({ title, onBack, onHome, onAdmin, right, children, scroll = false, className = '' }: Props) {
@@ -30,7 +30,7 @@ export function KioskFrame({ title, onBack, onHome, onAdmin, right, children, sc
             <ArrowLeft className="size-[1.5rem]" />
           </IconButton>
         )}
-        <PmxBrand onAdmin={onAdmin} />
+        <NwowBrand onAdmin={onAdmin} />
         {title && (
           <>
             <div className="h-[2.4rem] w-px bg-white/20 phone:hidden" aria-hidden="true" />

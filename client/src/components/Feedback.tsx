@@ -1,14 +1,14 @@
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, Star } from 'lucide-react'
-import { FEEDBACK_COPY, UNDERSTANDING_LABELS } from '@shared/feedback'
+import { FEEDBACK_COPY, FEEDBACK_SOLUTIONS, OTHER_SOLUTION_LABEL, OTHER_SOLUTION_PREFIX, UNDERSTANDING_LABELS } from '@shared/feedback'
+import { cleanText, LIMITS } from '@shared/validation'
 import { uuid } from '@shared/random'
 import { submitFeedback } from '../lib/feedback'
 import type { Seat } from '../lib/useRun'
 
 interface Props {
   seat: Pick<Seat, 'run_id' | 'token'>
-  solutions: { id: string; name: string }[]
   /** Head-to-Head: "Player 1 of 2 · Name". */
   who?: string
   phone?: boolean
@@ -56,11 +56,20 @@ function Question({ n, text, children, phone }: { n: number; text: string; child
   )
 }
 
+/** Question 2 answers: the picked chips, plus the typed-in name when "Others" is ticked. */
+function interest(chips: string[], otherOn: boolean, otherText: string): string[] | null {
+  const typed = otherOn ? cleanText(otherText) : ''
+  const all = typed ? [...chips, OTHER_SOLUTION_PREFIX + typed] : chips
+  return all.length ? all : null
+}
+
 /** Three one-tap questions between the reveal and the result card. */
-export function FeedbackForm({ seat, solutions, who, phone = false, onDone }: Props) {
+export function FeedbackForm({ seat, who, phone = false, onDone }: Props) {
   const [q1, setQ1] = useState<boolean | null>(null)
   const [q2, setQ2] = useState<boolean | null>(null)
   const [chips, setChips] = useState<string[]>([])
+  const [otherOn, setOtherOn] = useState(false)
+  const [otherText, setOtherText] = useState('')
   const [q3, setQ3] = useState(0)
   const [pop, setPop] = useState(0)
   const [sending, setSending] = useState(false)
@@ -77,7 +86,7 @@ export function FeedbackForm({ seat, solutions, who, phone = false, onDone }: Pr
       token: seat.token,
       q1_relevant: q1!,
       q2_would_explore: q2!,
-      q2_interested_solutions: q2 && chips.length ? chips : null,
+      q2_interested_solutions: q2 ? interest(chips, otherOn, otherText) : null,
       q3_understanding_rating: q3,
     })
     setTimeout(onDone, 350)
@@ -105,7 +114,11 @@ export function FeedbackForm({ seat, solutions, who, phone = false, onDone }: Pr
           label={FEEDBACK_COPY.q2}
           onChange={(v) => {
             setQ2(v)
-            if (!v) setChips([])
+            if (!v) {
+              setChips([])
+              setOtherOn(false)
+              setOtherText('')
+            }
           }}
         />
         <AnimatePresence initial={false}>
@@ -113,7 +126,7 @@ export function FeedbackForm({ seat, solutions, who, phone = false, onDone }: Pr
             <motion.div initial={{ height: 0, opacity: 0, y: -6 }} animate={{ height: 'auto', opacity: 1, y: 0 }} exit={{ height: 0, opacity: 0, y: -6 }} transition={{ duration: 0.24 }} className="overflow-hidden">
               <p className="mb-2 mt-3 font-bold text-muted">{FEEDBACK_COPY.q2_chips}</p>
               <div className="flex flex-wrap gap-2" role="group" aria-label={FEEDBACK_COPY.q2_chips}>
-                {solutions.map((s) => {
+                {FEEDBACK_SOLUTIONS.map((s) => {
                   const on = chips.includes(s.id)
                   return (
                     <button key={s.id} type="button" role="checkbox" aria-checked={on} className="fb-chip" onClick={() => setChips((c) => (on ? c.filter((x) => x !== s.id) : [...c, s.id]))}>
@@ -122,7 +135,25 @@ export function FeedbackForm({ seat, solutions, who, phone = false, onDone }: Pr
                     </button>
                   )
                 })}
+                <button type="button" role="checkbox" aria-checked={otherOn} className="fb-chip" data-testid="fb-other" onClick={() => setOtherOn((o) => !o)}>
+                  {otherOn && <Check className="size-4" strokeWidth={3} aria-hidden="true" />}
+                  {OTHER_SOLUTION_LABEL}
+                </button>
               </div>
+              {otherOn && (
+                <input
+                  className="fb-other mt-3"
+                  data-testid="fb-other-text"
+                  aria-label="Name of the solution"
+                  placeholder="Name of the solution"
+                  maxLength={LIMITS.project.max}
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={otherText}
+                  onChange={(e) => setOtherText(e.target.value)}
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

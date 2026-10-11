@@ -1,5 +1,5 @@
-/** PMX Catalogue – Go Live: the 34 digital solutions (scrolling ticker on the home page). */
-export const PMX_SOLUTION_NAMES = [
+/** NWOW Catalogue – Go Live: the 34 digital solutions (scrolling ticker on the home page). */
+export const NWOW_SOLUTION_NAMES = [
   'Project Command Centre',
   'PPMS Suite',
   'EPMS Project Risk',

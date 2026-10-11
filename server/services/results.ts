@@ -1,5 +1,5 @@
 import { resolveAffiliationKey } from '@shared/affiliation'
-import { feedbackModeOf, type FeedbackSaved, type FeedbackStatus, type FeedbackSubmission } from '@shared/feedback'
+import { cleanInterest, feedbackModeOf, type FeedbackSaved, type FeedbackStatus, type FeedbackSubmission } from '@shared/feedback'
 import { titleFor } from '@shared/game'
 import { klDayKey } from '@shared/time'
 import type { RunResult } from '@shared/types'
@@ -99,8 +99,8 @@ export async function submitFeedback(store: Store, f: FeedbackSubmission, now: n
   if ((await store.hasFeedback(run.id)) || (await answeredOn(store, run, klDayKey(at)))) {
     throw httpError(409, 'already_given', 'This player already answered today.')
   }
-  const known = new Set((await store.listSolutions()).map((s) => s.id))
-  const picked = f.q2_would_explore ? [...new Set((f.q2_interested_solutions ?? []).filter((id) => known.has(id)))] : []
+  const { profanity } = await store.getSettings()
+  const picked = f.q2_would_explore ? cleanInterest(f.q2_interested_solutions, profanity) : []
   const saved = await store.insertFeedback({
     feedback_id: f.feedback_id,
     session_id: run.id,

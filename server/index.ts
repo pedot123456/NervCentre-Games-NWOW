@@ -1,5 +1,5 @@
 /**
- * PMX Digital Challenge – Word Rush: local / booth server.
+ * NWOW Digital Challenge – Word Rush: local / booth server.
  * Serves the kiosk app, the phones, the TV display, the admin area and the API from one process.
  * (On Vercel the same app runs as a serverless function – see vercel.ts.)
  */
@@ -33,7 +33,7 @@ const { app } = await buildApp({
 await app.listen({ port: config.port, host: config.host })
 
 console.log(`
-  PMX Digital Challenge – Word Rush  v${config.appVersion}
+  NWOW Digital Challenge – Word Rush  v${config.appVersion}
   ------------------------------------------------
   Kiosk     http://localhost:${config.port}/#/
   Phones    ${lan.length ? lan.map((u) => `${u}/#/join`).join('  ') : '(no network interface found)'}

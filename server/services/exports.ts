@@ -1,7 +1,7 @@
 import { strToU8, zipSync } from 'fflate'
 import { groupProjects } from '@shared/affiliation'
 import type { ExportTable } from '@shared/dashboard'
-import { FEEDBACK_MODE_LABELS, type FeedbackFilter } from '@shared/feedback'
+import { FEEDBACK_MODE_LABELS, solutionLabel, type FeedbackFilter } from '@shared/feedback'
 import { formatKlDateTime, formatSeconds } from '@shared/time'
 import { MODE_LABELS } from '@shared/types'
 import { AFFILIATION_LABELS } from '@shared/validation'
@@ -137,8 +137,7 @@ export async function exportSheet(store: Store, table: ExportTable, f: DashFilte
 }
 
 export async function feedbackSheet(store: Store, f: FeedbackFilter): Promise<Sheet> {
-  const [rows, id, solutions] = await Promise.all([feedbackRows(store, f), loadIdentity(store), store.listSolutions()])
-  const nameOf = new Map(solutions.map((s) => [s.id, s.name]))
+  const [rows, id] = await Promise.all([feedbackRows(store, f), loadIdentity(store)])
   return {
     name: 'Feedback',
     rows: [
@@ -155,7 +154,7 @@ export async function feedbackSheet(store: Store, f: FeedbackFilter): Promise<Sh
         MODE_LABELS[x.race_mode],
         yesNo(x.q1_relevant),
         yesNo(x.q2_would_explore),
-        (x.q2_interested_solutions ?? []).map((s) => nameOf.get(s) ?? s).join('; '),
+        (x.q2_interested_solutions ?? []).map(solutionLabel).join('; '),
         x.q3_understanding_rating,
         x.feedback_id,
         x.session_id,

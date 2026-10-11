@@ -162,7 +162,7 @@ describe('Admin', () => {
 
   it('feedback, rehearsal mode, dashboard, exports and test-data removal', async () => {
     const seat = await playSolo(srv, bizPlayer('Feedback Fan', 'Gas & Maritime - MLNG'), 5)
-    const answers = { q1_relevant: true, q2_would_explore: true, q2_interested_solutions: ['sid'], q3_understanding_rating: 5 }
+    const answers = { q1_relevant: true, q2_would_explore: true, q2_interested_solutions: ['orion'], q3_understanding_rating: 5 }
     const fb = await http(srv.url, '/api/feedback', { json: { ...seat, ...answers, feedback_id: uuid() } })
     assert.equal(fb.status, 200)
     const again = await http(srv.url, '/api/feedback', { json: { ...seat, ...answers, feedback_id: uuid(), q3_understanding_rating: 4 } })
@@ -179,7 +179,7 @@ describe('Admin', () => {
     assert.equal(dash.kpis.rehearsal_games, 1)
     assert.equal(dash.kpis.feedback, 1)
     assert.equal(dash.kpis.avg_understanding, 5)
-    assert.equal(dash.interest.find((i) => i.id === 'sid')!.players, 1)
+    assert.equal(dash.interest.find((i) => i.id === 'orion')!.players, 1)
     assert.equal(dash.solutions.length, 6)
     // Project vs Business split, players by OPU (every listed OPU, in list order), players by project name.
     const projectPeople = dash.projects.reduce((n, p) => n + p.players, 0)

@@ -119,7 +119,7 @@ export function useIdle(seconds: number, onIdle: () => void, enabled = true): nu
 
 // ── Gestures ────────────────────────────────────────────────────────────────
 
-/** Press and hold for `ms` (the staff shortcut on the PMX logo). */
+/** Press and hold for `ms` (the staff shortcut on the NWOW logo). */
 export function useLongPress(onHold: () => void, ms: number) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancel = () => {

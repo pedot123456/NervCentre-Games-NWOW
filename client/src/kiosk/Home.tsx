@@ -1,6 +1,6 @@
 import { ArrowRight, Columns2, Crown, Hand, Medal, Smartphone, Sparkles, Timer, Trophy, Users } from 'lucide-react'
 import { formatSeconds } from '@shared/time'
-import { PartnerLogos, PmxBrand } from '../components/Brand'
+import { PartnerLogos, NwowBrand } from '../components/Brand'
 import { Ticker } from '../components/Ticker'
 import { AdminGear, FullscreenToggle, SoundToggle } from '../components/ui'
 import { boardsStore, configStore, useLive } from '../lib/data'
@@ -39,7 +39,7 @@ export function Home({ onBegin, onBattle, onH2H, onLeaderboard, onAdmin }: Props
   return (
     <div className="relative z-10 flex min-h-dvh flex-col">
       <header className="relative mx-auto flex w-full max-w-[112rem] flex-wrap items-center gap-4 px-[2.4rem] pt-[max(1.1rem,env(safe-area-inset-top))] phone:px-4">
-        <PmxBrand onAdmin={onAdmin} />
+        <NwowBrand onAdmin={onAdmin} />
         <div className="absolute left-1/2 top-4 -translate-x-1/2 phone:static phone:order-last phone:flex phone:w-full phone:translate-x-0 phone:justify-center portrait:static portrait:order-last portrait:flex portrait:w-full portrait:translate-x-0 portrait:justify-center">
           <PartnerLogos size="md" />
         </div>
@@ -55,7 +55,7 @@ export function Home({ onBegin, onBattle, onH2H, onLeaderboard, onAdmin }: Props
             <span className="live-dot" /> Word Rush · Booth game
           </p>
           <h1 className="font-display text-[5.4rem] font-bold leading-[0.95] tracking-tight phone:text-[2.5rem]">
-            <TitleText title={settings?.event_title ?? 'PMX Digital Challenge'} />
+            <TitleText title={settings?.event_title ?? 'NWOW Digital Challenge'} />
           </h1>
           <p className="mt-4 font-display text-[1.75rem] font-semibold text-nc-lime phone:text-[1.2rem]">{settings?.event_subtitle ?? 'Powering Project Delivery Through Digital'}</p>
           <p className="mt-3 max-w-[48rem] text-[1.2rem] text-white/80">

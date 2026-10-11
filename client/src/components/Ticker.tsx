@@ -1,9 +1,9 @@
 import { Fragment } from 'react'
-import { PMX_SOLUTION_NAMES } from '@shared/catalogue'
+import { NWOW_SOLUTION_NAMES } from '@shared/catalogue'
 
-/** The 34 PMX catalogue solutions scrolling along the bottom of Home. */
+/** The 34 NWOW catalogue solutions scrolling along the bottom of Home. */
 export function Ticker() {
-  const names = [...PMX_SOLUTION_NAMES, ...PMX_SOLUTION_NAMES]
+  const names = [...NWOW_SOLUTION_NAMES, ...NWOW_SOLUTION_NAMES]
   return (
     <div
       className="relative z-10 w-full overflow-hidden border-t border-nc-blue-soft/15 bg-sky-950/60 pb-[max(0.7rem,env(safe-area-inset-bottom))] pt-3 [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]"

@@ -15,7 +15,7 @@
 @custom-variant short (@media (max-height: 520px));
 
 /* ── Brand theme ───────────────────────────────────────────────────────────
-   The five PMX colours: Blue #20419A (backgrounds & structure – the "sky" shades below are
+   The five NWOW colours: Blue #20419A (backgrounds & structure – the "sky" shades below are
    darker Blue) · Soft Green #BFD730 (main buttons, selected / active) · Green #00A19C (correct,
    done) · Yellow #FDB924 (timer, 1st place) · Purple #763F98 (multiplayer, star glow).
    Red is used only for a wrong tile / error message. "-soft" tints are for text on dark Blue.
@@ -580,6 +580,21 @@
   .fb-chip:active {
     transform: scale(0.97);
   }
+  .fb-other {
+    width: 100%;
+    min-height: max(48px, 3rem);
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.8rem;
+    border: 2px solid var(--color-line);
+    background: #fff;
+    color: var(--color-nc-navy);
+    font-size: max(16px, 1rem);
+    font-weight: 600;
+  }
+  .fb-other:focus {
+    outline: none;
+    border-color: var(--color-nc-blue);
+  }
   .fb-star {
     display: grid;
     place-items: center;
@@ -715,7 +730,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Faint grid behind the home page (the PMX "command centre" look). */
+/* Faint grid behind the home page (the NWOW "command centre" look). */
 .grid-lines {
   background-image:
     linear-gradient(rgb(157 180 242 / 0.06) 1px, transparent 1px),

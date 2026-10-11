@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { ArrowRight, CheckCircle2, Hourglass, LogOut, PartyPopper, Smartphone, Users } from 'lucide-react'
 import type { RaceState } from '@shared/types'
 import { formatSeconds } from '@shared/time'
-import { PartnerLogos, PmxBrand } from '../components/Brand'
+import { PartnerLogos, NwowBrand } from '../components/Brand'
 import { Constellation } from '../components/Constellation'
 import { Countdown } from '../components/Countdown'
 import { FeedbackForm } from '../components/Feedback'
@@ -38,7 +38,7 @@ function Shell({ title, children, logos = true }: { title: string; children: Rea
   return (
     <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[34rem] flex-col p-4 pt-[max(1rem,env(safe-area-inset-top))]">
       <header className="mb-3 flex items-center gap-3">
-        <PmxBrand compact />
+        <NwowBrand compact />
         <p className="ml-auto truncate text-[0.8rem] font-bold uppercase tracking-[0.14em] text-nc-purple-soft">{title}</p>
         <SoundToggle className="!min-h-12 !min-w-12" />
       </header>
@@ -349,7 +349,6 @@ function RevealStep({ step, onDone }: { step: Extract<Step, { s: 'reveal' }>; on
 }
 
 function FeedbackPhone({ seat, onDone }: { seat: Seat; onDone: () => void }) {
-  const config = useStore(configStore)
   const [required, setRequired] = useState<boolean | null>(null)
   const done = useRef(onDone)
   done.current = onDone
@@ -377,7 +376,7 @@ function FeedbackPhone({ seat, onDone }: { seat: Seat; onDone: () => void }) {
   return (
     <div className="fb-page relative z-10 min-h-dvh">
       <div className="mx-auto max-w-[34rem] px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <FeedbackForm seat={seat} solutions={config?.solutions ?? []} phone onDone={onDone} />
+        <FeedbackForm seat={seat} phone onDone={onDone} />
       </div>
     </div>
   )

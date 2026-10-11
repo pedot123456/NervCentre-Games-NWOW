@@ -35,7 +35,7 @@ export interface Solution {
 }
 
 export interface Settings {
-  /** Home page title, e.g. "PMX Digital Challenge". */
+  /** Home page title, e.g. "NWOW Digital Challenge". */
   event_title: string
   /** Line under the title, e.g. "Powering Project Delivery Through Digital". */
   event_subtitle: string

@@ -1,4 +1,4 @@
-# PMX Digital Challenge – Word Rush (NervCentre Games NWOW)
+# NWOW Digital Challenge – Word Rush (NervCentre Games NWOW)
 
 Touchscreen booth game: players build the names of six digital solutions from word tiles in 30 seconds.
 Each name lights a star of the NERVCENTRE "N" constellation. Solo Rush, Multiplayer Battle (phones),

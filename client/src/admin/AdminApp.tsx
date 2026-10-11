@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { BarChart3, Database, ExternalLink, FolderKanban, House, KeyRound, ListChecks, LogOut, MessageSquare, Puzzle, Radio, ScrollText, Settings, Trophy } from 'lucide-react'
 import { pinPolicyError } from '@shared/admin'
-import { PartnerLogos, PmxBrand } from '../components/Brand'
+import { PartnerLogos, NwowBrand } from '../components/Brand'
 import { configStore } from '../lib/data'
 import { readLocal, useStore, writeLocal } from '../lib/store'
 import { api, ApiError, getToken, setToken } from './api'
@@ -144,7 +144,7 @@ function Login({ onSignedIn }: { onSignedIn: (token: string, mustChange: boolean
         <div className="mb-5 flex justify-center rounded-xl bg-nc-blue px-4 py-3">
           <PartnerLogos size="sm" />
         </div>
-        <h1 className="text-xl font-extrabold">PMX Digital Challenge · Admin</h1>
+        <h1 className="text-xl font-extrabold">NWOW Digital Challenge · Admin</h1>
         <p className="mb-4 text-muted">Enter the Admin PIN.</p>
         <input
           type="password"
@@ -243,7 +243,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
     <div className="flex min-h-dvh max-md:flex-col">
       {/* Sidebar (≥ 768 px) */}
       <aside className="sticky top-0 flex h-dvh w-[240px] shrink-0 flex-col gap-4 bg-nc-blue p-4 text-white max-md:hidden">
-        <PmxBrand compact />
+        <NwowBrand compact />
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-nc-lime">Admin</p>
         <button type="button" className="btn btn-go min-h-0 py-2.5 text-base" onClick={goHome}>
           <House className="size-4" aria-hidden="true" /> Back to Home

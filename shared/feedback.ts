@@ -1,5 +1,5 @@
 import type { GameMode } from './types'
-import type { AffiliationType } from './validation'
+import { checkProjectName, type AffiliationType } from './validation'
 
 /**
  * Booth feedback: three one-tap questions between the end of a game and the result card.
@@ -27,6 +27,76 @@ export const FEEDBACK_COPY = {
   submit: 'See My Result',
 } as const
 
+/**
+ * The solutions players can pick under question 2 (independent of the game's word-tile solutions).
+ * "Others" lets them type a name; it is stored as "other:<name>" in q2_interested_solutions.
+ */
+export const FEEDBACK_SOLUTIONS = [
+  { id: 'orion', name: 'ORION' },
+  { id: 'project-command-centre', name: 'Project Command Centre' },
+  { id: 'myicons', name: 'MYICONS' },
+  { id: 'quality-plus', name: 'Quality+' },
+  { id: 'project-production-management', name: 'Project Production Management' },
+] as const
+
+export const OTHER_SOLUTION_PREFIX = 'other:'
+export const OTHER_SOLUTION_LABEL = 'Others'
+
+/** "other:Digital Twin" → "Digital Twin"; null for a listed solution id. */
+export const otherSolutionName = (v: string): string | null => (v.startsWith(OTHER_SOLUTION_PREFIX) ? v.slice(OTHER_SOLUTION_PREFIX.length) : null)
+
+/** Display name of a stored answer: the listed name, or "Others: <typed name>". */
+export function solutionLabel(v: string): string {
+  const other = otherSolutionName(v)
+  if (other !== null) return `${OTHER_SOLUTION_LABEL}: ${other}`
+  return FEEDBACK_SOLUTIONS.find((s) => s.id === v)?.name ?? v
+}
+
+/**
+ * Cleans the answers to question 2: listed ids and at most one typed-in name (checked like a
+ * project name, blocked words included); unknown ids and repeats are dropped.
+ */
+export function cleanInterest(raw: readonly string[] | null | undefined, profanity: readonly string[] = []): string[] {
+  const out: string[] = []
+  let other = false
+  for (const v of raw ?? []) {
+    const typed = otherSolutionName(v)
+    if (typed !== null) {
+      const c = checkProjectName(typed, profanity)
+      if (c.ok && !other) {
+        out.push(OTHER_SOLUTION_PREFIX + c.value)
+        other = true
+      }
+    } else if (FEEDBACK_SOLUTIONS.some((s) => s.id === v) && !out.includes(v)) {
+      out.push(v)
+    }
+  }
+  return out
+}
+
+/** Distinct players per listed solution, then per typed-in name (grouped ignoring case), highest first. */
+export function interestCounts(rows: readonly { player_id: string; q2_would_explore: boolean; q2_interested_solutions: string[] | null }[]): { id: string; name: string; players: number }[] {
+  const yes = rows.filter((x) => x.q2_would_explore)
+  const listed = FEEDBACK_SOLUTIONS.map((s) => ({
+    id: s.id as string,
+    name: s.name as string,
+    players: new Set(yes.filter((x) => x.q2_interested_solutions?.includes(s.id)).map((x) => x.player_id)).size,
+  }))
+  const others = new Map<string, { name: string; players: Set<string> }>()
+  for (const x of yes) {
+    for (const v of x.q2_interested_solutions ?? []) {
+      const typed = otherSolutionName(v)
+      if (typed === null) continue
+      const key = typed.toLowerCase()
+      const o = others.get(key) ?? { name: typed, players: new Set<string>() }
+      o.players.add(x.player_id)
+      others.set(key, o)
+    }
+  }
+  const typed = [...others.entries()].map(([key, o]) => ({ id: OTHER_SOLUTION_PREFIX + key, name: `${OTHER_SOLUTION_LABEL}: ${o.name}`, players: o.players.size }))
+  return [...listed, ...typed].sort((a, b) => b.players - a.players)
+}
+
 /** Label under the stars for ratings 1–5. */
 export const UNDERSTANDING_LABELS = ['', 'Not at all', 'A little', 'Somewhat', 'Yes', 'Very much'] as const
 
@@ -37,7 +107,7 @@ export interface FeedbackSubmission {
   token: string
   q1_relevant: boolean
   q2_would_explore: boolean
-  /** Solution ids – only with a Yes to question 2 (optional, any number). */
+  /** FEEDBACK_SOLUTIONS ids and/or one "other:<name>" – only with a Yes to question 2 (optional, any number). */
   q2_interested_solutions: string[] | null
   q3_understanding_rating: number
   /** When "See My Result" was tapped, on the server clock as the device knew it (an offline answer syncs later). */

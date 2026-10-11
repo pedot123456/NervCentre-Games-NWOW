@@ -74,7 +74,7 @@ export async function buildApp(opts: AppOptions): Promise<{ app: FastifyInstance
     })
   } else {
     app.get('/', async () => ({
-      name: 'PMX Digital Challenge – Word Rush API',
+      name: 'NWOW Digital Challenge – Word Rush API',
       hint: 'Run "npm run build" to serve the app from this server, or "npm run dev" while developing.',
     }))
   }

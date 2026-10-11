@@ -3,7 +3,7 @@ import nervcentreLogo from '../assets/nervcentre-logo.png'
 import petronasLogo from '../assets/petronas-logo.png'
 import { useLongPress } from '../lib/hooks'
 
-/** PMX mark (hexagon + connected nodes) in the brand Soft Green → Green. */
+/** NWOW mark (hexagon + connected nodes) in the brand Soft Green → Green. */
 export function BrandMark({ className = '' }: { className?: string }) {
   const id = `bm${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   return (
@@ -25,14 +25,14 @@ export function BrandMark({ className = '' }: { className?: string }) {
   )
 }
 
-/** "PMX · Digital Project Management" – a 2.5 s press opens Admin (staff shortcut). */
-export function PmxBrand({ onAdmin, compact = false }: { onAdmin?: () => void; compact?: boolean }) {
+/** "NWOW · Digital Project Management" – a 2.5 s press opens Admin (staff shortcut). */
+export function NwowBrand({ onAdmin, compact = false }: { onAdmin?: () => void; compact?: boolean }) {
   const hold = useLongPress(() => onAdmin?.(), 2500)
   return (
-    <div className="flex min-w-0 select-none items-center gap-3" {...(onAdmin ? hold : {})} data-testid="pmx-brand">
+    <div className="flex min-w-0 select-none items-center gap-3" {...(onAdmin ? hold : {})} data-testid="nwow-brand">
       <BrandMark className={`${compact ? 'size-10' : 'size-[3rem]'} shrink-0 drop-shadow-[0_0_14px_rgba(191,215,48,0.35)]`} />
       <div className="min-w-0 leading-tight">
-        <div className={`font-display font-bold tracking-[0.12em] ${compact ? 'text-lg' : 'text-[1.45rem]'}`}>PMX</div>
+        <div className={`font-display font-bold tracking-[0.12em] ${compact ? 'text-lg' : 'text-[1.45rem]'}`}>NWOW</div>
         {/* On a narrow portrait tablet the subline gives way so the page title next to it stays readable. */}
         <div className={`truncate font-semibold uppercase text-nc-lime/80 ${compact ? 'text-[max(11px,0.58rem)] tracking-[0.06em]' : 'text-[max(11px,0.72rem)] tracking-[0.2em] portrait:max-[900px]:hidden phone:hidden'}`}>Digital Project Management</div>
       </div>

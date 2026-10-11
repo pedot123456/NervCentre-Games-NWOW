@@ -3,7 +3,7 @@ import type { Settings, Solution } from './types'
 /**
  * First-run content. Everything here is editable in Admin.
  * Clues are the examples from the brief; recap lines for SID, PTQ Online, PPM and PCC follow the
- * PMX catalogue wording. Project AI and PDSB Services use the brief's clue text – replace with the
+ * NWOW catalogue wording. Project AI and PDSB Services use the brief's clue text – replace with the
  * official one-liners before the event if needed.
  */
 export const SEED_SOLUTIONS: Solution[] = [
@@ -110,7 +110,7 @@ export const PREVIOUS_DEFAULT_OPUS: string[] = [
 ]
 
 export const DEFAULT_SETTINGS: Settings = {
-  event_title: 'PMX Digital Challenge',
+  event_title: 'NWOW Digital Challenge',
   event_subtitle: 'Powering Project Delivery Through Digital',
   timer_seconds: 30,
   wrong_penalty_ms: 1000,

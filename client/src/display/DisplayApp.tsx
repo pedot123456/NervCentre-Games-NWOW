@@ -2,7 +2,7 @@ import { FlaskConical, Gamepad2, House, Radio, Swords, Timer, Trophy, Users, Cro
 import type { RaceState } from '@shared/types'
 import { MODE_LABELS } from '@shared/types'
 import { formatSeconds, KL_OFFSET_MS } from '@shared/time'
-import { PartnerLogos, PmxBrand } from '../components/Brand'
+import { PartnerLogos, NwowBrand } from '../components/Brand'
 import { TimesTable, WinsTable } from '../components/Boards'
 import { Constellation } from '../components/Constellation'
 import { Qr } from '../components/Qr'
@@ -56,9 +56,9 @@ export function DisplayApp() {
   return (
     <div className="relative z-10 mx-auto flex h-dvh w-full max-w-[110rem] flex-col gap-[1.2rem] px-[2.4rem] py-[1.4rem] phone:h-auto phone:min-h-dvh phone:px-4 portrait:h-auto portrait:min-h-dvh">
       <header className="flex flex-wrap items-center gap-4">
-        <PmxBrand />
+        <NwowBrand />
         <div className="h-[2.4rem] w-px bg-white/20" aria-hidden="true" />
-        <h1 className="font-display text-[2rem] font-bold">{settings?.event_title ?? 'PMX Digital Challenge'}</h1>
+        <h1 className="font-display text-[2rem] font-bold">{settings?.event_title ?? 'NWOW Digital Challenge'}</h1>
         <div className="flex-1" />
         <PartnerLogos size="md" />
         {settings?.rehearsal_mode && (

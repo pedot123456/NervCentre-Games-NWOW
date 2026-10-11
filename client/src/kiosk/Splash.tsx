@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrandMark, PartnerLogos } from '../components/Brand'
 
-/** 1 s splash: logos, PMX mark, title, progress bar. A tap skips it. */
+/** 1 s splash: logos, NWOW mark, title, progress bar. A tap skips it. */
 export function Splash({ title, subtitle, onDone }: { title: string; subtitle: string; onDone: () => void }) {
   const [leaving, setLeaving] = useState(false)
   useEffect(() => {
@@ -29,7 +29,7 @@ export function Splash({ title, subtitle, onDone }: { title: string; subtitle: s
           <div className="absolute -inset-[35%] rounded-full bg-nc-green/25 blur-2xl" aria-hidden="true" />
           <BrandMark className="relative size-[clamp(4.5rem,11vh,8rem)]" />
         </div>
-        <p className="label mb-3 !text-nc-lime">PMX · Digital Project Management</p>
+        <p className="label mb-3 !text-nc-lime">NWOW · Digital Project Management</p>
         <h1 className="font-display text-[clamp(2.4rem,4.5vw+2vh,6rem)] font-bold leading-[0.95] tracking-tight">
           {words.join(' ')} <span className="text-gradient">{last}</span>
         </h1>

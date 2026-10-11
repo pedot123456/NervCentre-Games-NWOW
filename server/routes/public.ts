@@ -110,7 +110,7 @@ export function registerPublicRoutes(app: FastifyInstance, svc: Services) {
         token: z.string().max(200),
         q1_relevant: z.boolean(),
         q2_would_explore: z.boolean(),
-        q2_interested_solutions: z.array(z.string().max(60)).max(20).nullable().optional(),
+        q2_interested_solutions: z.array(z.string().max(120)).max(20).nullable().optional(),
         q3_understanding_rating: z.number().int().min(1).max(5),
         answered_at: z.number().optional(),
       })

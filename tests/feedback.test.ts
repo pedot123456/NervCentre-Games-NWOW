@@ -28,7 +28,7 @@ type FeedbackRowDb = {
   opu: string | null
 }
 
-const answers = { q1_relevant: true, q2_would_explore: true, q2_interested_solutions: ['sid', 'pcc'], q3_understanding_rating: 4 }
+const answers = { q1_relevant: true, q2_would_explore: true, q2_interested_solutions: ['orion', 'project-command-centre'], q3_understanding_rating: 4 }
 
 describe('Booth feedback (between the game and the result card)', () => {
   let srv: TestServer
@@ -104,17 +104,17 @@ describe('Booth feedback (between the game and the result card)', () => {
     assert.equal(row.game_mode, 'solo')
     assert.equal(row.team_id, null)
     assert.equal(row.is_test, false)
-    assert.deepEqual(row.q2_interested_solutions, ['sid', 'pcc'])
+    assert.deepEqual(row.q2_interested_solutions, ['orion', 'project-command-centre'])
     s.disconnect()
   })
 
   it('solution chips count only with a Yes to question 2', async () => {
     const no = await soloGame(player('Chip Tester', 'Jerun'))
-    assert.equal((await send(no, { q2_would_explore: false, q2_interested_solutions: ['sid'] })).status, 200)
+    assert.equal((await send(no, { q2_would_explore: false, q2_interested_solutions: ['orion'] })).status, 200)
     assert.equal((await rowsFor(no.run_id))[0].q2_interested_solutions, null, 'switching to No clears the chips')
     const yes = await soloGame(player('Chip Picker', 'Jerun'))
-    assert.equal((await send(yes, { q2_interested_solutions: ['ppm', 'not-a-solution', 'ppm'] })).status, 200)
-    assert.deepEqual((await rowsFor(yes.run_id))[0].q2_interested_solutions, ['ppm'], 'unknown ids dropped, no repeats')
+    assert.equal((await send(yes, { q2_interested_solutions: ['quality-plus', 'not-a-solution', 'quality-plus', 'other:  Digital   Twin ', 'other:Second One', 'other:!!'] })).status, 200)
+    assert.deepEqual((await rowsFor(yes.run_id))[0].q2_interested_solutions, ['quality-plus', 'other:Digital Twin'], 'unknown ids dropped, no repeats, one typed-in "Others" name (cleaned)')
     const none = await soloGame(player('Chip Skipper', 'Jerun'))
     assert.equal((await send(none, { q2_interested_solutions: [] })).status, 200)
     assert.equal((await rowsFor(none.run_id))[0].q2_interested_solutions, null, 'chips are optional')
@@ -266,7 +266,16 @@ describe('Booth feedback (between the game and the result card)', () => {
     const interest = await db.query<{ s: string; n: number }>(
       `SELECT s, count(DISTINCT player_id)::int AS n FROM feedback, unnest(q2_interested_solutions) AS s WHERE is_test = false AND q2_would_explore GROUP BY s`,
     )
-    for (const s of d.solutions) assert.equal(s.players, interest.find((x) => x.s === s.id)?.n ?? 0, s.id)
+    for (const s of d.solutions) {
+      // Typed-in "Others" names are grouped ignoring case: compare them the same way.
+      const n = s.id.startsWith('other:') ? interest.filter((x) => x.s.toLowerCase() === s.id.toLowerCase()).reduce((a, x) => a + x.n, 0) : (interest.find((x) => x.s === s.id)?.n ?? 0)
+      assert.equal(s.players, n, s.id)
+    }
+    assert.deepEqual(
+      d.solutions.filter((s) => !s.id.startsWith('other:')).map((s) => s.name).sort(),
+      ['MYICONS', 'ORION', 'Project Command Centre', 'Project Production Management', 'Quality+'],
+      'the five listed solutions are always shown',
+    )
     assert.deepEqual(
       d.solutions.map((s) => s.players),
       [...d.solutions.map((s) => s.players)].sort((a, b) => b - a),

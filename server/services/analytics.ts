@@ -1,7 +1,7 @@
 import { opuKey } from '@shared/affiliation'
 import type { DashboardData } from '@shared/dashboard'
 import type { FeedbackBreakdownRow, FeedbackDashboard, FeedbackFilter, FeedbackMode } from '@shared/feedback'
-import { feedbackModeOf } from '@shared/feedback'
+import { feedbackModeOf, interestCounts } from '@shared/feedback'
 import { DAY_MS, klDayKey, klDayRange, klHour } from '@shared/time'
 import type { GameMode } from '@shared/types'
 import { AFFILIATION_TYPES, type AffiliationType } from '@shared/validation'
@@ -152,19 +152,11 @@ export async function dashboard(store: Store, f: DashFilter): Promise<DashboardD
       .map((p) => ({ key: p.key, label: p.label, players: p.players.size, games: p.games, best_time_ms: minOf(p.best) }))
       .sort((a, b) => b.players - a.players || b.games - a.games || a.label.localeCompare(b.label)),
     modes: (['solo', 'battle', 'h2h'] as GameMode[]).map((mode) => ({ mode, games: runs.filter((r) => r.mode === mode).length })),
-    interest: interestOf(feedback, solutions),
+    interest: interestCounts(feedback),
   }
 }
 
-function interestOf(feedback: FeedbackRecord[], solutions: { id: string; name: string }[]) {
-  return solutions
-    .map((s) => ({
-      id: s.id,
-      name: s.name,
-      players: new Set(feedback.filter((x) => x.q2_would_explore && x.q2_interested_solutions?.includes(s.id)).map((x) => x.player_id)).size,
-    }))
-    .sort((a, b) => b.players - a.players)
-}
+
 
 // ── Feedback section ────────────────────────────────────────────────────────
 
@@ -221,7 +213,7 @@ function breakdown(rows: FeedbackRecord[], keyOf: (x: FeedbackRecord) => { key: 
 }
 
 export async function feedbackDashboard(store: Store, f: FeedbackFilter): Promise<FeedbackDashboard> {
-  const [settings, id, solutions] = await Promise.all([store.getSettings(), loadIdentity(store), store.listSolutions()])
+  const [settings, id] = await Promise.all([store.getSettings(), loadIdentity(store)])
   const all = await feedbackRows(store, f, true)
   const rows = all.filter((x) => !x.is_test)
   const runs = (await store.endedRuns(feedbackRange(f))).filter((r) => matches(f, { mode: feedbackModeOf(r.mode), affiliation_type: r.affiliation_type, opu: r.opu }))
@@ -240,7 +232,7 @@ export async function feedbackDashboard(store: Store, f: FeedbackFilter): Promis
       average: avg(rows.map((x) => x.q3_understanding_rating)),
       distribution: [1, 2, 3, 4, 5].map((rating) => ({ rating, count: rows.filter((x) => x.q3_understanding_rating === rating).length })),
     },
-    solutions: interestOf(rows, solutions),
+    solutions: interestCounts(rows),
     by_opu: breakdown(rows, (x) => (x.affiliation_type === 'business' && x.opu ? { key: opuKey(x.opu), label: x.opu } : null)),
     by_project: breakdown(rows, (x) => (x.affiliation_type === 'project' && x.project_name ? id.project(x.project_name) : null)),
   }

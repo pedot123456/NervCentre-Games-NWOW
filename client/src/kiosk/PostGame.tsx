@@ -38,7 +38,6 @@ export function FeedbackStep({ seat, who, onDone, onIdle, onAdmin }: { seat: Sea
     }
   }, [seat.run_id, seat.token])
 
-  const solutions = config?.solutions ?? []
   return (
     <KioskFrame onAdmin={onAdmin} scroll>
       {required === null ? (
@@ -49,13 +48,13 @@ export function FeedbackStep({ seat, who, onDone, onIdle, onAdmin }: { seat: Sea
       ) : phone ? (
         <div className="fb-page -mx-4 -mb-[1.4rem] flex-1 px-4 pt-4" data-testid="feedback">
           <div className="mx-auto max-w-[34rem]">
-            <FeedbackForm seat={seat} solutions={solutions} who={who} phone onDone={onDone} />
+            <FeedbackForm seat={seat} who={who} phone onDone={onDone} />
           </div>
         </div>
       ) : (
         <div className="flex flex-1 items-start justify-center pb-4" data-testid="feedback">
           <div className="fb-page w-full max-w-[64rem] rounded-[1.5rem] p-6 shadow-[0_1.6rem_3.5rem_-1.4rem_rgb(0_0_0/0.65)]">
-            <FeedbackForm seat={seat} solutions={solutions} who={who} onDone={onDone} />
+            <FeedbackForm seat={seat} who={who} onDone={onDone} />
           </div>
         </div>
       )}
